@@ -1,0 +1,319 @@
+@use 'sass:color';
+
+// SCSS Variables
+$primary-color: #2c3e50;
+$secondary-color: #34495e;
+$accent-color: #e74c3c;
+$text-light: #ecf0f1;
+$text-muted: #bdc3c7;
+$learning-color: #1890ff;
+$challenge-color: #faad14;
+$interactive-color: #52c41a;
+
+// Mixins
+@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin card-shadow {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+@mixin game-card-base {
+  text-align: center;
+  height: 280px;
+  
+  .ant-card-body {
+    height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+@mixin game-icon-base {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+// Game specific styles
+.game-container {
+  @include flex-center;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 20px;
+  background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
+}
+
+.game-card-container {
+  width: 100%;
+  max-width: 1200px;
+}
+
+// Game mode cards
+.game-mode-card {
+  @include game-card-base;
+  
+  &.learning {
+    .game-mode-icon {
+      @include game-icon-base;
+      color: $learning-color;
+    }
+  }
+  
+  &.challenge {
+    .game-mode-icon {
+      @include game-icon-base;
+      color: $challenge-color;
+    }
+  }
+  
+  &.interactive {
+    .game-mode-icon {
+      @include game-icon-base;
+      color: $interactive-color;
+    }
+  }
+  
+  .game-mode-description {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.65);
+    line-height: 1.5;
+  }
+}
+
+.game-canvas {
+  @include card-shadow;
+  border: 2px solid $secondary-color;
+  background-color: $text-light;
+  transition: transform 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.02);
+  }
+}
+
+.game-info {
+  margin-top: 20px;
+  text-align: center;
+  
+  .game-title {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    color: $text-light;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  }
+  
+  .game-status {
+    font-size: 1.2rem;
+    color: $text-muted;
+  }
+}
+
+// Study and Level pages
+.study-page, .level-page {
+  min-height: 100vh;
+  padding: 20px;
+  background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
+  
+  .study-header, .level-header {
+    margin-bottom: 24px;
+    
+    .ant-btn {
+      color: $text-light;
+      
+      &:hover {
+        color: $learning-color;
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+    
+    h2 {
+      color: $text-light !important;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+  }
+  
+  .study-content, .level-content {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+// Character cards layout
+.character-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  padding: 20px 0;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+// Character card styles
+.character-card {
+  width: 200px;
+  height: 280px;
+  perspective: 1000px;
+  cursor: pointer;
+  margin: 0 auto;
+  transition: transform 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-5px);
+    
+    .card-front, .card-back {
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+    }
+  }
+  
+  .card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+    
+    &.flipped {
+      transform: rotateY(180deg);
+    }
+  }
+  
+  .card-front, .card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border: 2px solid #e9ecef;
+    transition: box-shadow 0.3s ease;
+  }
+  
+  .card-front {
+    .character {
+      font-size: 4rem;
+      font-weight: bold;
+      color: $primary-color;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .pinyin {
+      font-size: 1.5rem;
+      color: $secondary-color;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    
+    .word {
+      font-size: 1.2rem;
+      color: $primary-color;
+      font-weight: 600;
+      margin-bottom: 10px;
+      opacity: 0.8;
+    }
+    
+    .meaning {
+      font-size: 1rem;
+      color: #6c757d;
+      font-style: italic;
+    }
+  }
+  
+  .card-back {
+    transform: rotateY(180deg);
+    background: linear-gradient(135deg, $learning-color 0%, color.scale($learning-color, $lightness: 20%) 100%);
+    color: white;
+    
+    .character-image {
+      width: 120px;
+      height: 120px;
+      border-radius: 10px;
+      object-fit: cover;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .character-info {
+      text-align: center;
+      
+      .character {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 8px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      
+      .pinyin {
+        font-size: 1.2rem;
+        opacity: 0.9;
+      }
+    }
+    
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      
+      .ant-spin {
+        margin-bottom: 15px;
+      }
+      
+      .loading-text {
+        font-size: 1rem;
+        opacity: 0.8;
+      }
+    }
+  }
+}
+
+.study-page {
+  .ant-steps-item-icon {
+    background-color: $learning-color;
+  }
+}
+
+.level-page {
+  .ant-progress-bg {
+    background-color: $challenge-color;
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .game-card-container {
+    .ant-row {
+      flex-direction: column;
+    }
+    
+    .ant-col {
+      width: 100% !important;
+      margin-bottom: 16px;
+    }
+  }
+  
+  .game-canvas {
+    width: 90vw;
+    height: auto;
+  }
+  
+  .game-info .game-title {
+    font-size: 1.5rem;
+  }
+  
+  .study-page, .level-page {
+    padding: 10px;
+  }
+}
