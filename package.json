@@ -8,7 +8,13 @@
     "build": "webpack --mode production",
     "dev": "webpack serve --mode development --open"
   },
-  "keywords": ["game", "canvas", "react", "typescript", "html5"],
+  "keywords": [
+    "game",
+    "canvas",
+    "react",
+    "typescript",
+    "html5"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
@@ -25,6 +31,8 @@
     "babel-loader": "^9.1.0",
     "css-loader": "^6.8.1",
     "html-webpack-plugin": "^5.5.3",
+    "sass": "^1.89.2",
+    "sass-loader": "^16.0.5",
     "style-loader": "^3.3.3",
     "typescript": "^5.1.6",
     "webpack": "^5.88.2",
