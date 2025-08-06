@@ -110,8 +110,26 @@ export const chineseCharacters: Character[] = [
   { id: 100, character: '跳', pinyin: 'tiào', meaning: 'dance', word: '跳舞' }
 ];
 
-// 随机选择12个汉字用于学习
+// 随机选择12个汉字用于学习（保留兼容性）
 export const getRandomCharacters = (count: number = 12): Character[] => {
   const shuffled = [...chineseCharacters].sort(() => 0.5 - Math.random());
   return shuffled.slice(0, count);
+};
+
+// 按顺序获取汉字用于学习
+export const getSequentialCharacters = (startIndex: number = 0, count: number = 12): Character[] => {
+  const totalChars = chineseCharacters.length;
+  const characters: Character[] = [];
+  
+  for (let i = 0; i < count; i++) {
+    const index = (startIndex + i) % totalChars;
+    characters.push(chineseCharacters[index]);
+  }
+  
+  return characters;
+};
+
+// 获取总字符数
+export const getTotalCharacterCount = (): number => {
+  return chineseCharacters.length;
 };

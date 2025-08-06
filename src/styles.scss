@@ -148,7 +148,7 @@ $interactive-color: #52c41a;
 .character-cards-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  gap: 10px 8px;
   padding: 20px 0;
   max-width: 1000px;
   margin: 0 auto;
