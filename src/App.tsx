@@ -21,8 +21,9 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-  
-  }, []);
+    // 只在页面刷新且不在有效路径时才重定向到首页
+    // 保留有效的路由路径，只处理无效路径
+  }, [navigate]);
 
   return (
     <div className="game-container">

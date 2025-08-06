@@ -24,12 +24,14 @@ const StudyPage: React.FC = () => {
   // 初始化学习汉字
   useEffect(() => {
     // 如果还没有汉字数据，则加载新的汉字
-    if (studyCharacters.length === 0 && !hasInitialized.current) {
-      const characters = getSequentialCharacters(currentStartIndex, 12);
-      setStudyCharacters(characters);
-      setCurrentStep(1); // 进入学习发音阶段
-      message.success(`已为您准备了12个汉字（第${currentStartIndex + 1}-${currentStartIndex + 12}个），点击卡片开始学习！`);
-      hasInitialized.current = true;
+    if (studyCharacters.length === 0) {
+      if (!hasInitialized.current) {
+        const characters = getSequentialCharacters(currentStartIndex, 12);
+        setStudyCharacters(characters);
+        setCurrentStep(1); // 进入学习发音阶段
+        message.success(`已为您准备了12个汉字（第${currentStartIndex + 1}-${currentStartIndex + 12}个），点击卡片开始学习！`);
+        hasInitialized.current = true;
+      }
     }
   }, [studyCharacters.length, currentStartIndex]);
 
@@ -70,6 +72,7 @@ const StudyPage: React.FC = () => {
 
       <div className="study-content">
         <Row gutter={[24, 16]}>
+          
           {studyCharacters.length > 0 && (
             <Col span={24}>
               <Card
@@ -96,6 +99,7 @@ const StudyPage: React.FC = () => {
               </Card>
             </Col>
           )}
+          
           <Col span={24}>
             <Card title="学习统计" bordered={false}>
               <Row gutter={16}>

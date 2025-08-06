@@ -1,5 +1,6 @@
 export const getImg = (name: string) => {
-  return fetch(`https://api.unsplash.com/photos?query=${name}&client_id=KAkpgm_aUtrO5UAmzqhCHC2PUOrOYRWgq7KMOhK86rs`);
+  // return fetch(`https://api.unsplash.com/photos?query=${name}&client_id=KAkpgm_aUtrO5UAmzqhCHC2PUOrOYRWgq7KMOhK86rs`);
+  return fetch(`https://api.unsplash.com/photos/random?query=${name}&client_id=VgXXwwxZfmVMlgHvbyGWx4oFI0sA5Al5WannrsoMQEU`);
 };
 export const getMp3 = (name: string) => {
   const formData = new URLSearchParams();
