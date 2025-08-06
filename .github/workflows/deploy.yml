@@ -1,0 +1,49 @@
+name: Deploy to Gitee Pages
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: true
+        fetch-depth: 0
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build React App
+      run: npm run build
+    
+    - name: Setup Hugo
+      uses: peaceiris/actions-hugo@v2
+      with:
+        hugo-version: 'latest'
+        extended: true
+    
+    - name: Build Hugo Site
+      run: hugo --minify
+    
+    - name: Deploy to Gitee Pages
+      uses: yanglbme/gitee-pages-action@main
+      with:
+        gitee-username: ${{ secrets.GITEE_USERNAME }}
+        gitee-password: ${{ secrets.GITEE_PASSWORD }}
+        gitee-repo: ${{ secrets.GITEE_REPO }}
+        branch: gh-pages
+        directory: ./public
+        https: true
