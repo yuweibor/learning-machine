@@ -4,10 +4,10 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = {
   entry: './src/index.tsx',
   output: {
-    path: path.resolve(__dirname, 'public/dist'),
+    path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
-    publicPath: '/your-repo-name/dist/',
-    clean: false,
+    publicPath: '/',
+    clean: true,
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
@@ -32,7 +32,7 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: './src/template.html',
-      filename: 'game.html',
+      filename: 'index.html',
     }),
   ],
   devServer: {

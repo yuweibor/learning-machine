@@ -143,6 +143,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character }) => {
         <div className="card-front">
           <div className="character">{character.character}</div>
           <div className="pinyin">{character.pinyin}</div>
+          <div className="word">{character.word}</div>
           <div className="meaning">{character.meaning}</div>
         </div>
         
