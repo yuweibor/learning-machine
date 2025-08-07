@@ -42,7 +42,7 @@ keywords: ["汉字学习", "卡片游戏", "React", "TypeScript", "教育游戏"
 点击下方链接开始您的汉字学习之旅：
 
 <div style="text-align: center; margin: 2rem 0;">
-  <a href="/dist/index.html" style="display: inline-block; padding: 12px 24px; background-color: #1890ff; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">🎮 开始游戏</a>
+  <a href="/dist/game.html" style="display: inline-block; padding: 12px 24px; background-color: #1890ff; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">🎮 开始游戏</a>
 </div>
 
 ## 学习方法
