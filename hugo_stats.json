@@ -1,0 +1,41 @@
+{
+  "htmlElements": {
+    "tags": [
+      "a",
+      "body",
+      "div",
+      "em",
+      "h1",
+      "h2",
+      "h3",
+      "head",
+      "hr",
+      "html",
+      "li",
+      "link",
+      "meta",
+      "ol",
+      "p",
+      "strong",
+      "style",
+      "title",
+      "ul"
+    ],
+    "classes": [
+      "content",
+      "footer",
+      "header"
+    ],
+    "ids": [
+      "-互动体验",
+      "-关卡模式",
+      "-学习模式",
+      "学习方法",
+      "开始游戏",
+      "技术栈",
+      "汉字学习卡片游戏",
+      "游戏特色",
+      "项目信息"
+    ]
+  }
+}

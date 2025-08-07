@@ -1,4 +1,4 @@
-name: Deploy to Gitee Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
@@ -38,12 +38,9 @@ jobs:
     - name: Build Hugo Site
       run: hugo --minify
     
-    - name: Deploy to Gitee Pages
-      uses: yanglbme/gitee-pages-action@main
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
       with:
-        gitee-username: ${{ secrets.GITEE_USERNAME }}
-        gitee-password: ${{ secrets.GITEE_PASSWORD }}
-        gitee-repo: ${{ secrets.GITEE_REPO }}
-        branch: gh-pages
-        directory: ./public
-        https: true
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./public
+        publish_branch: gh-pages

@@ -57,7 +57,7 @@ keywords: ["汉字学习", "卡片游戏", "React", "TypeScript", "教育游戏"
 - **版本**：1.0.0
 - **许可证**：MIT
 - **开发环境**：Node.js + npm
-- **部署平台**：Gitee Pages
+- **部署平台**：GitHub Pages
 
 ---
 

@@ -1,7 +1,7 @@
-baseURL = "https://gitee.com/yu_weibo/learning-machine.git"
+baseURL = "https://yuweibor.github.io/learning-machine"
 languageCode = "zh-cn"
 title = "汉字学习卡片游戏"
-theme = "hugo-theme-stack"
+# theme = "hugo-theme-stack"  # 使用自定义布局，不需要主题
 
 # 静态文件配置
 staticDir = ["dist"]
@@ -17,10 +17,11 @@ staticDir = ["dist"]
     url = "/game"
     weight = 2
 
-# 参数配置
+# GitHub Pages 配置
 [params]
-  description = "一个基于React和TypeScript的汉字学习卡片游戏"
+  description = "一个有趣的汉字学习卡牌游戏，通过图片和声音帮助学习汉字"
   author = "Your Name"
+  keywords = ["汉字", "学习", "卡牌游戏", "教育"]
   
 # 构建配置
 [build]
