@@ -34,6 +34,13 @@ jobs:
     - name: Copy CNAME to dist
       run: cp CNAME dist/
     
+    - name: Verify build output
+      run: |
+        echo "Contents of dist directory:"
+        ls -la dist/
+        echo "Contents of index.html:"
+        cat dist/index.html
+    
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
       if: github.ref == 'refs/heads/main'
@@ -41,3 +48,4 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./dist
         force_orphan: true
+        keep_files: false
