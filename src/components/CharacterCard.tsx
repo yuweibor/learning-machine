@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Spin, Button } from 'antd';
 import { CheckOutlined, CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Character } from '../data/characters';
-import { getImg, getMp3 } from '../services';
+import { getImg, getMp3, playRandomVoicePrompt } from '../services';
 
 interface CharacterCardProps {
   character: Character;
@@ -136,18 +136,21 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMark
   // 处理标记已知
   const handleMarkKnown = (e: React.MouseEvent) => {
     e.stopPropagation();
+    playRandomVoicePrompt('known');
     onMarkKnown?.(character.id.toString(), true);
   };
 
   // 处理标记未知
   const handleMarkUnknown = (e: React.MouseEvent) => {
     e.stopPropagation();
+    playRandomVoicePrompt('unknown');
     onMarkKnown?.(character.id.toString(), false);
   };
 
   // 处理移除
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
+    playRandomVoicePrompt('remove');
     onRemove?.(character.id.toString());
   };
 

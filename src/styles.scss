@@ -384,11 +384,6 @@ $interactive-color: #52c41a;
       margin: 0;
       
       .character-cards-section {
-        position: fixed;
-        top: 60px;
-        left: 0;
-        right: 0;
-        bottom: 0;
         overflow-y: auto;
         padding: 8px;
         background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
@@ -505,4 +500,10 @@ $interactive-color: #52c41a;
     transform: translateY(0);
     opacity: 1;
   }
+}
+
+// 加载指示器旋转动画
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

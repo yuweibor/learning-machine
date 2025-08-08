@@ -122,7 +122,10 @@ export const getSequentialCharacters = (startIndex: number = 0, count: number = 
   const characters: Character[] = [];
   
   for (let i = 0; i < count; i++) {
-    const index = (startIndex + i) % totalChars;
+    const index = startIndex + i;
+    if (index >= totalChars) {
+      break; // 超出范围时停止添加
+    }
     characters.push(chineseCharacters[index]);
   }
   

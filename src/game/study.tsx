@@ -24,6 +24,7 @@ const StudyPage: React.FC = () => {
   const [filterType, setFilterType] = useState<'all' | 'known' | 'unknown'>('all'); // 筛选类型
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const hasInitialized = useRef(false);
   const totalCharacters = getTotalCharacterCount();
 
@@ -38,6 +39,43 @@ const StudyPage: React.FC = () => {
 
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // 手机模式下的滚动自动加载
+  useEffect(() => {
+    if (!isMobile) return;
+
+    let isLoading = false;
+
+    const handleScroll = () => {
+      // 防止重复加载
+      if (isLoading) return;
+      
+      // 检查是否滚动到底部
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      
+      const distanceFromBottom = documentHeight - (scrollTop + windowHeight);
+      
+      // 当距离底部还有100px时开始加载
+      if (distanceFromBottom <= 100) {
+        isLoading = true;
+        setIsLoadingMore(true);
+        
+        // 立即加载，不需要延迟
+        const hasMoreData = loadMoreCharacters(false); // 自动加载时不显示消息
+        
+        // 加载完成后重置状态
+        setTimeout(() => {
+          setIsLoadingMore(false);
+          isLoading = false;
+        }, hasMoreData ? 1000 : 0); // 如果没有更多数据，立即隐藏加载指示器
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isMobile]);
 
   // 从localStorage加载数据
   useEffect(() => {
@@ -75,12 +113,25 @@ const StudyPage: React.FC = () => {
     navigate('/');
   };
 
-  const loadMoreCharacters = () => {
-    const newStartIndex = (currentStartIndex + 12) % totalCharacters;
-    const newCharacters = getSequentialCharacters(newStartIndex, 12);
-    setStudyCharacters(prev => [...prev, ...newCharacters]);
-    setCurrentStartIndex(newStartIndex);
-    message.success(`已为您加载了12个新汉字（第${newStartIndex + 1}-${newStartIndex + 12}个）！`);
+  const loadMoreCharacters = (showMessage: boolean = true): boolean => {
+    // 检查是否已经加载了所有汉字
+    if (studyCharacters.length >= totalCharacters) {
+      if (showMessage) {
+        message.info('已经加载了所有汉字！');
+      }
+      return false;
+    }
+    
+    const nextStartIndex = studyCharacters.length;
+    const remainingCount = totalCharacters - nextStartIndex;
+    const loadCount = Math.min(12, remainingCount);
+    
+    const newCharacters = getSequentialCharacters(nextStartIndex, loadCount);
+    setStudyCharacters(prev => [...prev, ...newCharacters]); // 追加到列表
+    if (showMessage) {
+      message.success(`已为您加载了${loadCount}个新汉字（第${nextStartIndex + 1}-${nextStartIndex + loadCount}个）！`);
+    }
+    return true;
   };
 
   const handleCardFlip = (characterId: string) => {
@@ -189,50 +240,50 @@ const StudyPage: React.FC = () => {
   };
 
   const renderStatsCard = () => (
-    <Card title="学习统计" bordered={false}>
-      <Row gutter={16}>
-        <Col span={6}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1890ff' }}>{studyStats.todayStudied}</div>
-            <div>今日学习</div>
+    <Card title="学习统计" bordered={false} style={{ margin: '16px 0' }}>
+      <Row gutter={[16, 24]}>
+        <Col span={12}>
+          <div style={{ textAlign: 'center', padding: '12px' }}>
+            <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#1890ff', marginBottom: '8px' }}>{studyStats.todayStudied}</div>
+            <div style={{ fontSize: '16px', whiteSpace: 'nowrap' }}>今日学习</div>
           </div>
         </Col>
-        <Col span={6}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#52c41a' }}>{getFilteredCharacters().length}</div>
-            <div>当前汉字</div>
+        <Col span={12}>
+          <div style={{ textAlign: 'center', padding: '12px' }}>
+            <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#52c41a', marginBottom: '8px' }}>{getFilteredCharacters().length}</div>
+            <div style={{ fontSize: '16px', whiteSpace: 'nowrap' }}>当前汉字</div>
           </div>
         </Col>
-        <Col span={6}>
+        <Col span={12}>
           <div 
             style={{ 
               textAlign: 'center', 
               cursor: 'pointer',
-              padding: '8px',
-              borderRadius: '4px',
+              padding: '12px',
+              borderRadius: '8px',
               backgroundColor: filterType === 'unknown' ? 'rgba(255, 77, 79, 0.1)' : 'transparent',
               transition: 'background-color 0.3s'
             }}
             onClick={() => handleStatsClick('unknown')}
           >
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ff4d4f' }}>{studyStats.newWords}</div>
-            <div>生词统计</div>
+            <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#ff4d4f', marginBottom: '8px' }}>{studyStats.newWords}</div>
+            <div style={{ fontSize: '16px', whiteSpace: 'nowrap' }}>生词统计</div>
           </div>
         </Col>
-        <Col span={6}>
+        <Col span={12}>
           <div 
             style={{ 
               textAlign: 'center', 
               cursor: 'pointer',
-              padding: '8px',
-              borderRadius: '4px',
+              padding: '12px',
+              borderRadius: '8px',
               backgroundColor: filterType === 'known' ? 'rgba(250, 173, 20, 0.1)' : 'transparent',
               transition: 'background-color 0.3s'
             }}
             onClick={() => handleStatsClick('known')}
           >
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#faad14' }}>{studyStats.masteredWords}</div>
-            <div>熟词统计</div>
+            <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#faad14', marginBottom: '8px' }}>{studyStats.masteredWords}</div>
+            <div style={{ fontSize: '16px', whiteSpace: 'nowrap' }}>熟词统计</div>
           </div>
         </Col>
       </Row>
@@ -292,6 +343,32 @@ const StudyPage: React.FC = () => {
                 </Row>
               </div>
             )}
+            
+            {/* 手机模式下的加载更多指示器 */}
+            {isMobile && isLoadingMore && (
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '20px', 
+                color: '#fff' 
+              }}>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: '10px' 
+                }}>
+                  <div className="loading-spinner" style={{
+                    width: '20px',
+                    height: '20px',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    borderTop: '2px solid #fff',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
+                  <span>正在加载更多汉字...</span>
+                </div>
+              </div>
+            )}
 
             <Drawer
               title="学习工具"
@@ -302,20 +379,6 @@ const StudyPage: React.FC = () => {
               width={320}
             >
               <div className="drawer-content">
-                <div style={{ marginTop: 24, marginBottom: 16 }}>
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={() => {
-                      loadMoreCharacters();
-                      setDrawerVisible(false);
-                    }}
-                    type="primary"
-                    size="large"
-                    block
-                  >
-                    加载更多汉字
-                  </Button>
-                </div>
                 {renderStatsCard()}
               </div>
             </Drawer>
@@ -353,11 +416,11 @@ const StudyPage: React.FC = () => {
             </div>
           )}
 
-          {filterType === 'all' && (
+          {filterType === 'all' && studyCharacters.length < totalCharacters && (
             <div style={{ textAlign: 'center', marginTop: 32, marginBottom: 24 }}>
               <Button
                 icon={<ReloadOutlined />}
-                onClick={loadMoreCharacters}
+                onClick={() => loadMoreCharacters(true)}
                 type="primary"
                 size="large"
               >
