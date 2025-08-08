@@ -28,10 +28,10 @@ const StudyPage: React.FC = () => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
@@ -127,10 +127,14 @@ const StudyPage: React.FC = () => {
               <div className="character-cards-section">
                 <Row gutter={[12, 12]}>
                   {studyCharacters.map((character) => (
-                    <Col 
+                    <Col
                       key={character.id}
-                      xs={12}
-                      sm={8}
+                      xs={24}
+                      sm={12}
+                      md={8}
+                      lg={6}
+                      xl={4}
+                      xxl={3}
                     >
                       <CharacterCard character={character} />
                     </Col>
@@ -138,7 +142,7 @@ const StudyPage: React.FC = () => {
                 </Row>
               </div>
             )}
-            
+
             <Drawer
               title="学习工具"
               placement="right"
@@ -180,16 +184,16 @@ const StudyPage: React.FC = () => {
                 换一批
               </Button>
             </div>
-            
+
             {studyCharacters.length > 0 && (
               <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
                 {studyCharacters.map((character) => (
-                  <Col 
+                  <Col
                     key={character.id}
-                    xs={12} 
-                    sm={8} 
-                    md={6} 
-                    lg={4} 
+                    xs={24}
+                    sm={12}
+                    md={8}
+                    lg={6}
                     xl={4}
                     xxl={3}
                   >
@@ -198,7 +202,7 @@ const StudyPage: React.FC = () => {
                 ))}
               </Row>
             )}
-            
+
             <div className="other-content">
               {renderStatsCard()}
             </div>
