@@ -21,8 +21,48 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    // 只在页面刷新且不在有效路径时才重定向到首页
-    // 保留有效的路由路径，只处理无效路径
+    // 检测页面刷新并处理重定向
+    const handlePageRefresh = () => {
+      const currentUrl = window.location.href;
+      const currentPath = window.location.pathname;
+      
+      // 如果URL以localhost开头，不进行重定向
+      if (currentUrl.startsWith('http://localhost') || currentUrl.startsWith('https://localhost')) {
+        return;
+      }
+      
+      // 检查是否是页面刷新（通过performance API）
+      const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+      const isPageRefresh = navigationEntries.length > 0 && navigationEntries[0].type === 'reload';
+      
+      // 如果是页面刷新且不在首页，则重定向到首页
+      if (isPageRefresh && currentPath !== '/') {
+        console.log('检测到页面刷新，重定向到首页');
+        navigate('/', { replace: true });
+      }
+    };
+    
+    // 页面加载时执行检查
+    handlePageRefresh();
+    
+    // 监听页面刷新事件
+    window.addEventListener('beforeunload', () => {
+      // 在页面卸载前标记即将刷新
+      sessionStorage.setItem('isRefreshing', 'true');
+    });
+    
+    // 检查是否从刷新恢复
+    if (sessionStorage.getItem('isRefreshing') === 'true') {
+      sessionStorage.removeItem('isRefreshing');
+      const currentUrl = window.location.href;
+      const currentPath = window.location.pathname;
+      
+      // 如果不是localhost且不在首页，重定向到首页
+      if (!currentUrl.startsWith('http://localhost') && !currentUrl.startsWith('https://localhost') && currentPath !== '/') {
+        console.log('从页面刷新恢复，重定向到首页');
+        navigate('/', { replace: true });
+      }
+    }
   }, [navigate]);
 
   return (
