@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Button, Steps, Typography, Row, Col, message } from 'antd';
-import { ArrowLeftOutlined, BookOutlined, CheckCircleOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Card, Button, Steps, Typography, Row, Col, message, Drawer } from 'antd';
+import { ArrowLeftOutlined, BookOutlined, CheckCircleOutlined, PlayCircleOutlined, ReloadOutlined, MenuOutlined, BarChartOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { getRandomCharacters, getSequentialCharacters, getTotalCharacterCount, Character } from '../data/characters';
 import CharacterCard from '../components/CharacterCard';
@@ -18,8 +18,22 @@ const StudyPage: React.FC = () => {
     studyDays: 1
   });
   const [currentStartIndex, setCurrentStartIndex] = useState(0); // 当前学习起始位置
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const hasInitialized = useRef(false);
   const totalCharacters = getTotalCharacterCount();
+
+  // 检测屏幕尺寸
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // 初始化学习汉字
   useEffect(() => {
@@ -56,6 +70,31 @@ const StudyPage: React.FC = () => {
     }));
   };
 
+  const renderStatsCard = () => (
+    <Card title="学习统计" bordered={false}>
+      <Row gutter={16}>
+        <Col span={8}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1890ff' }}>{studyStats.todayStudied}</div>
+            <div>今日学习</div>
+          </div>
+        </Col>
+        <Col span={8}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#52c41a' }}>{studyCharacters.length}</div>
+            <div>当前汉字</div>
+          </div>
+        </Col>
+        <Col span={8}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#faad14' }}>{studyStats.studyDays}</div>
+            <div>学习天数</div>
+          </div>
+        </Col>
+      </Row>
+    </Card>
+  );
+
   return (
     <div className="study-page">
       <div className="study-header">
@@ -63,68 +102,108 @@ const StudyPage: React.FC = () => {
           icon={<ArrowLeftOutlined />}
           onClick={handleBack}
           type="text"
-          size="large"
+          size={isMobile ? "middle" : "large"}
         >
-          返回主页
+          {isMobile ? "返回" : "返回主页"}
         </Button>
         <Title level={2}>学习模式</Title>
+        {isMobile && (
+          <Button
+            icon={<MenuOutlined />}
+            onClick={() => setDrawerVisible(true)}
+            type="text"
+            size="middle"
+          >
+            菜单
+          </Button>
+        )}
       </div>
 
       <div className="study-content">
-        <Row gutter={[24, 16]}>
-          
-          {studyCharacters.length > 0 && (
-            <Col span={24}>
-              <Card
-                title="汉字学习卡片"
-                bordered={false}
-                extra={
+        {isMobile ? (
+          // 移动端布局
+          <>
+            {studyCharacters.length > 0 && (
+              <div className="character-cards-section">
+                <Row gutter={[12, 12]}>
+                  {studyCharacters.map((character) => (
+                    <Col 
+                      key={character.id}
+                      xs={12}
+                      sm={8}
+                    >
+                      <CharacterCard character={character} />
+                    </Col>
+                  ))}
+                </Row>
+              </div>
+            )}
+            
+            <Drawer
+              title="学习工具"
+              placement="right"
+              onClose={() => setDrawerVisible(false)}
+              open={drawerVisible}
+              className="mobile-drawer"
+              width={320}
+            >
+              <div className="drawer-content">
+                <div style={{ marginBottom: 16 }}>
                   <Button
                     icon={<ReloadOutlined />}
-                    onClick={handleNewRound}
+                    onClick={() => {
+                      handleNewRound();
+                      setDrawerVisible(false);
+                    }}
                     type="primary"
+                    block
+                    size="large"
                   >
-                    换一批
+                    换一批汉字
                   </Button>
-                }
-              >
-                <div className="character-cards-container">
-                  {studyCharacters.map((character) => (
-                    <CharacterCard
-                      key={character.id}
-                      character={character}
-                    />
-                  ))}
                 </div>
-              </Card>
-            </Col>
-          )}
-          
-          <Col span={24}>
-            <Card title="学习统计" bordered={false}>
-              <Row gutter={16}>
-                <Col span={8}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1890ff' }}>{studyStats.todayStudied}</div>
-                    <div>今日学习</div>
-                  </div>
-                </Col>
-                <Col span={8}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#52c41a' }}>{studyCharacters.length}</div>
-                    <div>当前汉字</div>
-                  </div>
-                </Col>
-                <Col span={8}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#faad14' }}>{studyStats.studyDays}</div>
-                    <div>学习天数</div>
-                  </div>
-                </Col>
+                {renderStatsCard()}
+              </div>
+            </Drawer>
+          </>
+        ) : (
+          // 桌面端布局
+          <>
+            <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, color: '#fff' }}>汉字学习卡片</h2>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={handleNewRound}
+                type="primary"
+                size="large"
+              >
+                换一批
+              </Button>
+            </div>
+            
+            {studyCharacters.length > 0 && (
+              <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                {studyCharacters.map((character) => (
+                  <Col 
+                    key={character.id}
+                    xs={12} 
+                    sm={8} 
+                    md={6} 
+                    lg={4} 
+                    xl={4}
+                    xxl={3}
+                  >
+                    <CharacterCard character={character} />
+                  </Col>
+                ))}
               </Row>
-            </Card>
-          </Col>
-        </Row>
+            )}
+            
+            <div className="other-content">
+              {renderStatsCard()}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

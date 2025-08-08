@@ -30,8 +30,8 @@ const App: React.FC = () => {
      <div>
       {/* 横纵比超过1就横着显示三个卡片否则竖着显示三个卡片 */}
       <div className="game-card-container">
-        <Row gutter={16} >
-          <Col span={8}>
+        <Row gutter={[24, 24]}>
+          <Col xs={24} sm={24} md={8} lg={8} xl={8}>
             <Card 
                title="学习模式" 
                bordered={false}
@@ -44,7 +44,7 @@ const App: React.FC = () => {
               <p className="game-mode-description">通过基础教程和练习来学习游戏规则和技巧</p>
             </Card>
           </Col>
-          <Col span={8}>
+          <Col xs={24} sm={24} md={8} lg={8} xl={8}>
             <Card 
                title="关卡模式" 
                bordered={false}
@@ -57,7 +57,7 @@ const App: React.FC = () => {
               <p className="game-mode-description">挑战不同难度的关卡，提升你的游戏水平</p>
             </Card>
           </Col>
-          <Col span={8}>
+          <Col xs={24} sm={24} md={8} lg={8} xl={8}>
             <Card 
                title="互动模式" 
                bordered={false}
