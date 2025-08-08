@@ -27,35 +27,35 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMark
   // 加载图片和音频数据
   const loadCardData = async () => {
     if (cardData.imageUrl && cardData.audioUrl) return; // 已加载过
-    
+
     setCardData(prev => ({ ...prev, isLoading: true }));
-    
+
     try {
       console.log('开始加载卡片数据:', character.character, character.word);
-      
+
       // 并行加载图片和音频
       const [imageResponse, audioResponse] = await Promise.all([
         getImg(character.word), // 使用组词获取图片
         getMp3(`${character.character},${character.word}`) // 使用"字,词"格式获取音频
       ]);
-      
+
       console.log('音频请求响应状态:', audioResponse.status, audioResponse.ok);
-      
+
       let imageUrl = '';
       let audioUrl = '';
-      
+
       // 处理图片响应
       if (imageResponse.ok) {
         const imageData = await imageResponse.json();
         imageUrl = imageData.urls?.small || imageData.urls?.regular || '';
         console.log('图片URL获取成功:', imageUrl);
       }
-      
+
       // 处理音频响应
       if (audioResponse.ok) {
         const audioData = await audioResponse.json();
         console.log('音频API响应数据:', audioData);
-        if (audioData.status===1 && audioData.data?.file_url) {
+        if (audioData.status === 1 && audioData.data?.file_url) {
           audioUrl = audioData.data.file_url;
           console.log('音频URL获取成功:', audioUrl);
         } else {
@@ -64,19 +64,19 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMark
       } else {
         console.log('音频请求失败，状态码:', audioResponse.status);
       }
-      
+
       setCardData({
         imageUrl,
         audioUrl,
         isLoading: false
       });
-      
+
       // 预加载音频并在加载完成后播放
       if (audioUrl) {
         console.log('创建音频对象:', audioUrl);
         const audioElement = new Audio(audioUrl);
         audioElement.preload = 'auto';
-        
+
         // 监听音频加载完成事件
         audioElement.addEventListener('canplaythrough', () => {
           console.log('音频加载完成，准备播放');
@@ -88,17 +88,17 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMark
             console.error('音频播放失败:', error);
           });
         });
-        
+
         // 监听音频加载错误
         audioElement.addEventListener('error', (e) => {
           console.error('音频加载错误:', e);
         });
-        
+
         setAudio(audioElement);
       } else {
         console.log('没有获取到音频URL，无法播放');
       }
-      
+
     } catch (error) {
       console.error('加载卡片数据失败:', error);
       setCardData({
@@ -175,19 +175,19 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMark
   }, [isFlipped, cardData.isLoading, audio]);
 
   return (
-    <div 
-      className="character-card" 
+    <div
+      className="character-card"
       onClick={handleCardClick}
       style={{ position: 'relative' }}
     >
       <div className={`card-inner ${isFlipped ? 'flipped' : ''}`} >
         {/* 正面：显示汉字、拼音、组词、含义 */}
-        <div className="card-front" style={{backgroundColor: getCardBackgroundColor()}}>
+        <div className="card-front" style={{ backgroundColor: getCardBackgroundColor() }}>
           <div className="character">{character.character}</div>
           <div className="pinyin">{character.pinyin}</div>
           <div className="word">{character.word}</div>
           <div className="meaning">{character.meaning}</div>
-          
+
           {/* 圆形图标按钮 */}
           {/* 左下角按钮 - 标记已知/未知 */}
           <div
@@ -236,7 +236,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMark
               />
             )}
           </div>
-          
+
           {/* 右下角按钮 - 生词/移除 */}
           <div
             style={{
@@ -285,7 +285,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMark
             ) : null}
           </div>
         </div>
-        
+
         {/* 背面：显示图片和汉字信息 */}
         <div className="card-back">
           {cardData.isLoading ? (
@@ -302,15 +302,20 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMark
           ) : (
             <>
               {cardData.imageUrl && (
-                <img 
-                  src={cardData.imageUrl} 
-                  alt={character.meaning}
-                  className="character-image"
-                  onError={(e) => {
-                    // 图片加载失败时隐藏
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
+                <div className="image-box" style={{
+                      '--bg-image': `url(${cardData.imageUrl})`
+                    } as React.CSSProperties & { '--bg-image': string }}>
+                  <img
+                    src={cardData.imageUrl}
+                    alt={character.meaning}
+                    className="character-image"
+                    onError={(e) => {
+                      // 图片加载失败时隐藏
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                  <div className="image-bg"></div>
+                </div>
               )}
               <div className="character-info">
                 <div className="character-with-pinyin">
