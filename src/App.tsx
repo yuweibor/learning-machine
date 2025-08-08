@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import { Card, Col, Row, Button } from 'antd';
 import { BookOutlined, TrophyOutlined, TeamOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { preloadVoicePrompts } from './services';
 import './styles.scss';
 
 const App: React.FC = () => {
@@ -24,13 +23,6 @@ const App: React.FC = () => {
   useEffect(() => {
     // 只在页面刷新且不在有效路径时才重定向到首页
     // 保留有效的路由路径，只处理无效路径
-    
-    // 预加载语音提示
-    preloadVoicePrompts().then(() => {
-      console.log('语音提示预加载完成');
-    }).catch(error => {
-      console.error('语音提示预加载失败:', error);
-    });
   }, [navigate]);
 
   return (

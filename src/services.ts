@@ -21,6 +21,17 @@ export const getMp3 = (name: string) => {
   });
 };
 
+// 获取音乐文件列表
+export const getMusicList = async (): Promise<string[]> => {
+  // 直接返回音乐文件列表，不进行网络验证
+  // 因为webpack dev server的静态文件服务可能不支持HEAD请求
+  const musicFiles = [
+    '儿童歌曲-读书郎.mp3'
+  ];
+
+  return musicFiles;
+};
+
 // 语音提示文本
 const VOICE_TEXTS = {
   unknown: ["这个有点难哦", "先记到生词本里", "帮我记一下吧", "好好标记一下", "记得复习"],

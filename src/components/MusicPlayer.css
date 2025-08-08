@@ -1,0 +1,168 @@
+.music-player {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+/* 收缩状态 */
+.music-player.collapsed {
+  width: 50px;
+  height: 50px;
+  opacity: 0.4;
+}
+
+/* 展开状态 */
+.music-player.expanded {
+  width: auto;
+}
+
+/* 抽屉触发按钮 */
+.drawer-trigger {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #1890ff;
+  transition: all 0.2s ease;
+}
+
+.drawer-trigger:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* 展开的控制面板 */
+.music-controls-panel {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 25px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.music-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 关闭按钮 */
+
+
+.control-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  padding: 4px;
+}
+
+.control-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
+}
+
+.control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.control-btn:disabled:hover {
+  background: none;
+  transform: none;
+}
+
+.play-btn {
+  font-size: 32px;
+  color: #1890ff;
+  padding: 6px;
+}
+
+.prev-btn,
+.next-btn {
+  font-size: 20px;
+  color: #666;
+  padding: 8px;
+}
+
+.prev-btn:hover,
+.next-btn:hover {
+  color: #1890ff;
+}
+
+.control-btn:disabled .anticon {
+  color: #ccc;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .music-player {
+    bottom: 15px;
+    left: 15px;
+  }
+  
+  .music-player.collapsed {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .drawer-trigger {
+    width: 45px;
+    height: 45px;
+    font-size: 20px;
+  }
+  
+  .music-controls-panel {
+    padding: 10px 12px;
+    min-width: 180px;
+  }
+  
+  .play-btn {
+    font-size: 24px;
+  }
+  
+  .prev-btn,
+  .next-btn {
+    font-size: 16px;
+  }
+  
+  .music-controls {
+    gap: 6px;
+  }
+  
+  .close-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
+  }
+}

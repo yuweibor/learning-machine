@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Layout from './Layout';
 import App from './App';
 import StudyPage from './game/study';
 import LevelPage from './game/level';
@@ -12,12 +13,14 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <Router>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/game/study" element={<StudyPage />} />
-        <Route path="/game/level" element={<LevelPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<App />} />
+          <Route path="/game/study" element={<StudyPage />} />
+          <Route path="/game/level" element={<LevelPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Layout>
     </Router>
   </React.StrictMode>
 );
