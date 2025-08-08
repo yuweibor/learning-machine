@@ -184,47 +184,8 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMark
           <div className="pinyin">{character.pinyin}</div>
           <div className="word">{character.word}</div>
           <div className="meaning">{character.meaning}</div>
-        </div>
-        
-        {/* 背面：显示图片和汉字信息 */}
-        <div className="card-back">
-          {cardData.isLoading ? (
-            <div className="loading">
-              <Spin size="large" />
-              <div className="loading-text">加载中...</div>
-            </div>
-          ) : cardData.error ? (
-            <div className="error">
-              <div className="character">{character.character}</div>
-              <div className="pinyin">{character.pinyin}</div>
-              <div style={{ color: '#ff6b6b', marginTop: '10px' }}>加载失败</div>
-            </div>
-          ) : (
-            <>
-              {cardData.imageUrl && (
-                <img 
-                  src={cardData.imageUrl} 
-                  alt={character.meaning}
-                  className="character-image"
-                  onError={(e) => {
-                    // 图片加载失败时隐藏
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              )}
-              <div className="character-info">
-                <div className="character">{character.character}</div>
-                <div className="word">{character.word}</div>
-                <div className="pinyin">{character.pinyin}</div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-      
-      {/* 圆形图标按钮 - 只在正面显示 */}
-      {!isFlipped && (
-        <>
+          
+          {/* 圆形图标按钮 */}
           {/* 左下角按钮 - 标记已知/未知 */}
           <div
             style={{
@@ -320,8 +281,46 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMark
               />
             ) : null}
           </div>
-        </>
-      )}
+        </div>
+        
+        {/* 背面：显示图片和汉字信息 */}
+        <div className="card-back">
+          {cardData.isLoading ? (
+            <div className="loading">
+              <Spin size="large" />
+              <div className="loading-text">加载中...</div>
+            </div>
+          ) : cardData.error ? (
+            <div className="error">
+              <div className="character">{character.character}</div>
+              <div className="pinyin">{character.pinyin}</div>
+              <div style={{ color: '#ff6b6b', marginTop: '10px' }}>加载失败</div>
+            </div>
+          ) : (
+            <>
+              {cardData.imageUrl && (
+                <img 
+                  src={cardData.imageUrl} 
+                  alt={character.meaning}
+                  className="character-image"
+                  onError={(e) => {
+                    // 图片加载失败时隐藏
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              )}
+              <div className="character-info">
+                <div className="character-with-pinyin">
+                  <div className="character">{character.character}</div>
+                  <div className="pinyin">{character.pinyin}</div>
+                </div>
+                <div className="word">{character.word}</div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
     </div>
   );
 };
