@@ -1,6 +1,31 @@
-export const getImg = (name: string) => {
-  // return fetch(`https://api.unsplash.com/photos?query=${name}&client_id=KAkpgm_aUtrO5UAmzqhCHC2PUOrOYRWgq7KMOhK86rs`);
-  return fetch(`https://api.unsplash.com/photos/random?query=${name}&client_id=VgXXwwxZfmVMlgHvbyGWx4oFI0sA5Al5WannrsoMQEU`);
+export const getImg = async (name: string) => {
+  const clientIds = [
+    'KAkpgm_aUtrO5UAmzqhCHC2PUOrOYRWgq7KMOhK86rs',
+    'VgXXwwxZfmVMlgHvbyGWx4oFI0sA5Al5WannrsoMQEU'
+  ];
+  
+  // 尝试使用第一个client_id
+  try {
+    const response = await fetch(`https://api.unsplash.com/photos/random?query=${name}&client_id=${clientIds[0]}`);
+    if (response.ok) {
+      return response;
+    }
+    throw new Error(`First client_id failed with status: ${response.status}`);
+  } catch (error) {
+    console.warn('第一个client_id请求失败，尝试使用第二个client_id:', error);
+    
+    // 尝试使用第二个client_id
+    try {
+      const response = await fetch(`https://api.unsplash.com/photos/random?query=${name}&client_id=${clientIds[1]}`);
+      if (response.ok) {
+        return response;
+      }
+      throw new Error(`Second client_id failed with status: ${response.status}`);
+    } catch (secondError) {
+      console.error('两个client_id都请求失败:', secondError);
+      throw new Error('所有client_id都请求失败');
+    }
+  }
 };
 export const getMp3 = (name: string) => {
   const formData = new URLSearchParams();
