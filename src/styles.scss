@@ -176,6 +176,13 @@ $interactive-color: #52c41a;
     
     &.flipped {
       transform: rotateY(180deg);
+      
+      // 确保翻转时正面的按钮完全隐藏
+      .card-front {
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none;
+      }
     }
   }
   
