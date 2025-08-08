@@ -191,7 +191,6 @@ $interactive-color: #52c41a;
     justify-content: center;
     align-items: center;
     padding: 10px;
-    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
     border: 2px solid #e9ecef;
     transition: box-shadow 0.3s ease;
   }
@@ -474,5 +473,17 @@ $interactive-color: #52c41a;
         }
       }
     }
+  }
+}
+
+// 遮罩滑入动画
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }

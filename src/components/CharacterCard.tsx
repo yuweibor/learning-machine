@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Spin } from 'antd';
+import { Spin, Button } from 'antd';
+import { CheckOutlined, CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Character } from '../data/characters';
 import { getImg, getMp3 } from '../services';
 
 interface CharacterCardProps {
   character: Character;
+  onFlip?: () => void;
+  onMarkKnown?: (characterId: string, known: boolean) => void;
+  onRemove?: (characterId: string) => void;
+  knownStatus?: 'known' | 'unknown' | null;
 }
 
 interface CardData {
@@ -14,7 +19,7 @@ interface CardData {
   error?: string;
 }
 
-const CharacterCard: React.FC<CharacterCardProps> = ({ character }) => {
+const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMarkKnown, onRemove, knownStatus }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [cardData, setCardData] = useState<CardData>({ isLoading: false });
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
@@ -119,11 +124,41 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character }) => {
       // 第一次点击：翻转到背面并加载数据
       setIsFlipped(true);
       loadCardData();
+      // 调用翻卡回调
+      onFlip?.();
     } else {
       // 再次点击：翻转回正面并播放音频
       setIsFlipped(false);
       playAudio();
     }
+  };
+
+  // 处理标记已知
+  const handleMarkKnown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onMarkKnown?.(character.id.toString(), true);
+  };
+
+  // 处理标记未知
+  const handleMarkUnknown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onMarkKnown?.(character.id.toString(), false);
+  };
+
+  // 处理移除
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onRemove?.(character.id.toString());
+  };
+
+  // 获取卡片背景色
+  const getCardBackgroundColor = () => {
+    if (knownStatus === 'known') {
+      return 'rgb(202, 255, 209)'; // 阿里规范绿色 - 熟词（已掌握）
+    } else if (knownStatus === 'unknown') {
+      return 'rgb(255, 186, 187)'; // 阿里规范红色 - 生词（需学习）
+    }
+    return 'rgba(255, 255, 255, 1)'; // 白色背景
   };
 
   // 当翻转到背面且数据加载完成时播放音频（仅在音频已预加载的情况下）
@@ -137,10 +172,14 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character }) => {
   }, [isFlipped, cardData.isLoading, audio]);
 
   return (
-    <div className="character-card" onClick={handleCardClick}>
-      <div className={`card-inner ${isFlipped ? 'flipped' : ''}`}>
+    <div 
+      className="character-card" 
+      onClick={handleCardClick}
+      style={{ position: 'relative' }}
+    >
+      <div className={`card-inner ${isFlipped ? 'flipped' : ''}`} >
         {/* 正面：显示汉字、拼音、组词、含义 */}
-        <div className="card-front">
+        <div className="card-front" style={{backgroundColor: getCardBackgroundColor()}}>
           <div className="character">{character.character}</div>
           <div className="pinyin">{character.pinyin}</div>
           <div className="word">{character.word}</div>
@@ -182,6 +221,107 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character }) => {
           )}
         </div>
       </div>
+      
+      {/* 圆形图标按钮 - 只在正面显示 */}
+      {!isFlipped && (
+        <>
+          {/* 左下角按钮 - 标记已知/未知 */}
+          <div
+            style={{
+              position: 'absolute',
+              left: '10px',
+              bottom: '10px',
+              zIndex: 10
+            }}
+          >
+            {knownStatus !== 'known' ? (
+              <Button
+                type="primary"
+                shape="circle"
+                icon={<CheckOutlined />}
+                onClick={handleMarkKnown}
+                style={{
+                  backgroundColor: '#52c41a',
+                  borderColor: '#52c41a',
+                  width: '48px',
+                  height: '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '16px'
+                }}
+                title="标记已知"
+              />
+            ) : (
+              <Button
+                type="primary"
+                shape="circle"
+                icon={<CloseOutlined />}
+                onClick={handleMarkUnknown}
+                style={{
+                  backgroundColor: '#ff4d4f',
+                  borderColor: '#ff4d4f',
+                  width: '48px',
+                  height: '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '16px'
+                }}
+                title="标记未知"
+              />
+            )}
+          </div>
+          
+          {/* 右下角按钮 - 生词/移除 */}
+          <div
+            style={{
+              position: 'absolute',
+              right: '10px',
+              bottom: '10px',
+              zIndex: 10
+            }}
+          >
+            {knownStatus === null ? (
+              <Button
+                type="primary"
+                shape="circle"
+                icon={<CloseOutlined />}
+                onClick={handleMarkUnknown}
+                style={{
+                  backgroundColor: '#ff4d4f',
+                  borderColor: '#ff4d4f',
+                  width: '48px',
+                  height: '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '16px'
+                }}
+                title="标记生词"
+              />
+            ) : knownStatus ? (
+              <Button
+                type="primary"
+                shape="circle"
+                icon={<DeleteOutlined />}
+                onClick={handleRemove}
+                style={{
+                  backgroundColor: '#faad14',
+                  borderColor: '#faad14',
+                  width: '48px',
+                  height: '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '16px'
+                }}
+                title="移除卡片"
+              />
+            ) : null}
+          </div>
+        </>
+      )}
     </div>
   );
 };
