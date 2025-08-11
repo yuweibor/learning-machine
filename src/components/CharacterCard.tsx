@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Spin, Button } from 'antd';
 import { CheckOutlined, CloseOutlined, DeleteOutlined } from '@ant-design/icons';
+import { debounce } from 'lodash';
 import { Character } from '../data/characters';
 import { getImg, getMp3, playRandomVoicePrompt } from '../services';
 
@@ -118,8 +119,8 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMark
     }
   };
 
-  // 处理卡片点击
-  const handleCardClick = () => {
+  // 处理卡片点击的核心逻辑
+  const handleCardClickCore = useCallback(() => {
     if (!isFlipped) {
       // 第一次点击：翻转到背面并加载数据
       setIsFlipped(true);
@@ -131,7 +132,13 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMark
       setIsFlipped(false);
       playAudio();
     }
-  };
+  }, [isFlipped, onFlip]);
+
+  // 防抖处理的卡片点击
+  const handleCardClick = useCallback(
+    debounce(handleCardClickCore, 300),
+    [handleCardClickCore]
+  );
 
   // 处理标记已知
   const handleMarkKnown = (e: React.MouseEvent) => {
