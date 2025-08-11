@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Steps, Typography, Row, Col, message, Drawer } from 'antd';
 import { ArrowLeftOutlined, BookOutlined, CheckCircleOutlined, PlayCircleOutlined, ReloadOutlined, MenuOutlined, BarChartOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { throttle } from 'lodash';
 import { getRandomCharacters, getSequentialCharacters, getTotalCharacterCount, Character } from '../data/characters';
 import CharacterCard from '../components/CharacterCard';
 
@@ -20,12 +21,16 @@ const StudyPage: React.FC = () => {
   const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
   const [knownWords, setKnownWords] = useState<Set<string>>(new Set());
   const [unknownWords, setUnknownWords] = useState<Set<string>>(new Set());
-  const [currentStartIndex, setCurrentStartIndex] = useState(0); // 当前学习起始位置
+  const [nextLoadIndex, setNextLoadIndex] = useState(0); // 下一次加载的起始位置
   const [filterType, setFilterType] = useState<'all' | 'known' | 'unknown'>('all'); // 筛选类型
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreData, setHasMoreData] = useState(true); // 添加状态来跟踪是否还有更多数据
   const hasInitialized = useRef(false);
+  const isLoadingMoreRef = useRef(false); // 用于滚动事件中获取最新的加载状态
+  const hasMoreDataRef = useRef(true); // 用于滚动事件中获取最新的数据状态
+  const nextLoadIndexRef = useRef(0); // 用于获取最新的nextLoadIndex值
   const totalCharacters = getTotalCharacterCount();
 
   // 检测屏幕尺寸
@@ -40,42 +45,62 @@ const StudyPage: React.FC = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // 手机模式下的滚动自动加载
+  // 同步ref值与state值
   useEffect(() => {
-    if (!isMobile) return;
+    isLoadingMoreRef.current = isLoadingMore;
+  }, [isLoadingMore]);
 
-    let isLoading = false;
+  useEffect(() => {
+    hasMoreDataRef.current = hasMoreData;
+  }, [hasMoreData]);
 
-    const handleScroll = () => {
-      // 防止重复加载
-      if (isLoading) return;
+  useEffect(() => {
+    nextLoadIndexRef.current = nextLoadIndex;
+  }, [nextLoadIndex]);
+
+  /**
+   * 移动端滚动自动加载功能
+   * 当用户滚动到页面底部附近时自动触发加载
+   */
+  useEffect(() => {
+    // 只在移动端启用滚动加载
+    if (!isMobile) {
+      return;
+    }
+
+    // 使用节流优化滚动事件性能
+    const handleScroll = throttle(() => {
+      // 使用ref获取最新状态，避免闭包问题
+      if (isLoadingMoreRef.current || !hasMoreDataRef.current) {
+        return;
+      }
       
-      // 检查是否滚动到底部
+      // 获取滚动相关的尺寸信息
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       
+      // 计算距离页面底部的距离
       const distanceFromBottom = documentHeight - (scrollTop + windowHeight);
       
-      // 当距离底部还有100px时开始加载
-      if (distanceFromBottom <= 100) {
-        isLoading = true;
-        setIsLoadingMore(true);
-        
-        // 立即加载，不需要延迟
-        const hasMoreData = loadMoreCharacters(false); // 自动加载时不显示消息
-        
-        // 加载完成后重置状态
-        setTimeout(() => {
-          setIsLoadingMore(false);
-          isLoading = false;
-        }, hasMoreData ? 1000 : 0); // 如果没有更多数据，立即隐藏加载指示器
+      // 当距离底部100px时触发加载（提前加载提升用户体验）
+      if (distanceFromBottom < 100) {
+        // 调用统一的加载方法，不显示消息提示
+        loadMoreCharacters(false, 'scroll').then(hasMore => {
+          // 根据返回结果更新是否还有更多数据的状态
+          setHasMoreData(hasMore);
+        });
       }
-    };
+    }, 200); // 200ms节流间隔
 
+    // 添加滚动事件监听器
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isMobile]);
+    
+    // 清理函数：组件卸载时移除事件监听器
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [isMobile]); // 只依赖isMobile，避免重复绑定事件监听器
 
   // 从localStorage加载数据
   useEffect(() => {
@@ -95,43 +120,100 @@ const StudyPage: React.FC = () => {
     }
   }, []);
 
-  // 初始化学习汉字
+  /**
+   * 初始化学习汉字
+   * 只在组件首次加载且没有汉字数据时执行
+   */
   useEffect(() => {
     // 如果还没有汉字数据，则加载新的汉字
     if (studyCharacters.length === 0) {
       if (!hasInitialized.current) {
-        const characters = getSequentialCharacters(currentStartIndex, 12);
+        const characters = getSequentialCharacters(nextLoadIndex, 12);
         setStudyCharacters(characters);
+        setNextLoadIndex(nextLoadIndex + characters.length); // 更新下一次加载的索引
         setCurrentStep(1); // 进入学习发音阶段
-        message.success(`已为您准备了12个汉字（第${currentStartIndex + 1}-${currentStartIndex + 12}个），点击卡片开始学习！`);
+        message.success(`已为您准备了12个汉字（第${nextLoadIndex + 1}-${nextLoadIndex + characters.length}个），点击卡片开始学习！`);
+        // 检查是否还有更多数据
+        setHasMoreData(nextLoadIndex + characters.length < totalCharacters);
         hasInitialized.current = true;
       }
     }
-  }, [studyCharacters.length, currentStartIndex]);
+  }, [studyCharacters.length, totalCharacters]); // 移除nextLoadIndex依赖，避免循环触发
 
   const handleBack = () => {
     navigate('/');
   };
 
-  const loadMoreCharacters = (showMessage: boolean = true): boolean => {
-    // 检查是否已经加载了所有汉字
-    if (studyCharacters.length >= totalCharacters) {
+  /**
+   * 统一的加载更多汉字方法
+   * 适用于移动端滚动加载和PC端按钮加载
+   * @param showMessage 是否显示加载成功的消息提示
+   * @param triggerSource 触发来源：'scroll' | 'button'
+   * @returns Promise<boolean> 返回是否还有更多数据可加载
+   */
+  const loadMoreCharacters = async (showMessage: boolean = false, triggerSource: 'scroll' | 'button' = 'scroll'): Promise<boolean> => {
+    // 防止重复加载
+    if (isLoadingMore) {
+      return false;
+    }
+    
+    // 检查是否还有更多数据
+    if (!hasMoreData) {
       if (showMessage) {
         message.info('已经加载了所有汉字！');
       }
       return false;
     }
     
-    const nextStartIndex = studyCharacters.length;
-    const remainingCount = totalCharacters - nextStartIndex;
-    const loadCount = Math.min(12, remainingCount);
+    setIsLoadingMore(true);
     
-    const newCharacters = getSequentialCharacters(nextStartIndex, loadCount);
-    setStudyCharacters(prev => [...prev, ...newCharacters]); // 追加到列表
-    if (showMessage) {
-      message.success(`已为您加载了${loadCount}个新汉字（第${nextStartIndex + 1}-${nextStartIndex + loadCount}个）！`);
+    try {
+      // 使用ref获取最新的nextLoadIndex值
+      const currentNextLoadIndex = nextLoadIndexRef.current;
+      
+      // 检查是否已经加载了所有汉字
+      if (currentNextLoadIndex >= totalCharacters) {
+        if (showMessage) {
+          message.info('已经加载了所有汉字！');
+        }
+        setHasMoreData(false);
+        return false;
+      }
+      
+      // 计算本次需要加载的汉字数量（每次最多12个）
+      const remainingCharacters = totalCharacters - currentNextLoadIndex;
+      const loadCount = Math.min(12, remainingCharacters);
+      
+      // 保存当前起始索引用于消息显示
+      const currentStartIndex = currentNextLoadIndex;
+      
+      // 从数据源获取新的汉字
+      const newCharacters = getSequentialCharacters(currentNextLoadIndex, loadCount);
+      
+      // 更新学习汉字列表（追加到现有列表）
+      setStudyCharacters(prev => [...prev, ...newCharacters]);
+      
+      // 更新下一次加载的起始索引
+      const newNextLoadIndex = currentNextLoadIndex + loadCount;
+      setNextLoadIndex(newNextLoadIndex);
+      
+      // 检查是否还有更多数据可加载
+      const stillHasMore = newNextLoadIndex < totalCharacters;
+      setHasMoreData(stillHasMore);
+      
+      // 显示加载成功消息（仅在按钮触发时显示）
+      if (showMessage) {
+        message.success(`已加载第${currentStartIndex + 1}-${currentStartIndex + loadCount}个汉字`);
+      }
+      
+      return stillHasMore;
+    } catch (error) {
+      console.error('加载汉字时出错:', error);
+      message.error('加载汉字失败，请重试');
+      return false;
+    } finally {
+      setIsLoadingMore(false);
     }
-    return true;
   };
 
   const handleCardFlip = (characterId: string) => {
@@ -321,9 +403,9 @@ const StudyPage: React.FC = () => {
             {getFilteredCharacters().length > 0 && (
               <div className="character-cards-section">
                 <Row gutter={[12, 12]}>
-                  {getFilteredCharacters().map((character) => (
+                  {getFilteredCharacters().map((character, index) => (
                     <Col
-                      key={character.id}
+                      key={`mobile-${index}-${character.id}`}
                       xs={24}
                       sm={12}
                       md={8}
@@ -393,9 +475,9 @@ const StudyPage: React.FC = () => {
             {getFilteredCharacters().length > 0 && (
             <div className="character-cards-section">
               <Row gutter={[24, 24]}>
-                {getFilteredCharacters().map((character) => (
+                {getFilteredCharacters().map((character, index) => (
                 <Col
-                  key={character.id}
+                  key={`desktop-${index}-${character.id}`}
                   xs={24}
                   sm={12}
                   md={8}
@@ -416,15 +498,22 @@ const StudyPage: React.FC = () => {
             </div>
           )}
 
-          {filterType === 'all' && studyCharacters.length < totalCharacters && (
+          {filterType === 'all' && hasMoreData && (
             <div style={{ textAlign: 'center', marginTop: 32, marginBottom: 24 }}>
               <Button
                 icon={<ReloadOutlined />}
-                onClick={() => loadMoreCharacters(true)}
+                loading={isLoadingMore}
+                onClick={() => {
+                  // 调用统一的加载方法，显示成功消息
+                  loadMoreCharacters(true, 'button').then(hasMore => {
+                    // 根据返回结果更新是否还有更多数据的状态
+                    setHasMoreData(hasMore);
+                  });
+                }}
                 type="primary"
                 size="large"
               >
-                加载更多汉字
+                {isLoadingMore ? '加载中...' : '加载更多汉字'}
               </Button>
             </div>
           )}

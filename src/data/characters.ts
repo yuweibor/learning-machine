@@ -116,11 +116,20 @@ export const getRandomCharacters = (count: number = 12): Character[] => {
   return shuffled.slice(0, count);
 };
 
-// 按顺序获取汉字用于学习
+/**
+ * 按顺序获取汉字用于学习
+ * @param startIndex 起始索引位置
+ * @param count 需要获取的汉字数量
+ * @returns 按顺序获取的汉字数组
+ */
 export const getSequentialCharacters = (startIndex: number = 0, count: number = 12): Character[] => {
+  console.log('startIndex', startIndex);
+  console.log('count', count);
+  
   const totalChars = chineseCharacters.length;
   const characters: Character[] = [];
   
+  // 按顺序获取指定数量的汉字
   for (let i = 0; i < count; i++) {
     const index = startIndex + i;
     if (index >= totalChars) {
