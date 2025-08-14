@@ -61,7 +61,9 @@ export const getMusicList = async (): Promise<string[]> => {
 const VOICE_TEXTS = {
   unknown: ["这个有点难哦", "先记到生词本里", "帮我记一下吧", "好好标记一下", "记得复习"],
   known: ["我记住你了", "这个很简单", "我真棒,难不倒我", "这个我早就会了", "终于记住你了"],
-  remove: ["好久不看,我忘记了", "我再看看", "我也不确定能不能记住", "在学习学习吧"]
+  remove: ["好久不看,我忘记了", "我再看看", "我也不确定能不能记住", "在学习学习吧"],
+  success: ["bingo!", "correct!", "good!", "excellent!", "太棒了!", "抓到我了!"],
+  failure: ["啊欧!", "不对!", "你行不行啊?", "咋回事呀?", "错了错了!", "再接再厉!"]
 };
 
 // 预加载的音频缓存
@@ -69,7 +71,7 @@ const audioCache = new Map<string, HTMLAudioElement>();
 
 // 预加载所有语音提示
 export const preloadVoicePrompts = async () => {
-  const allTexts = [...VOICE_TEXTS.unknown, ...VOICE_TEXTS.known, ...VOICE_TEXTS.remove];
+  const allTexts = [...VOICE_TEXTS.unknown, ...VOICE_TEXTS.known, ...VOICE_TEXTS.remove, ...VOICE_TEXTS.success, ...VOICE_TEXTS.failure];
   
   // 使用Promise.allSettled来并行处理，避免单个失败影响整体
   const results = await Promise.allSettled(
@@ -98,10 +100,74 @@ export const preloadVoicePrompts = async () => {
   ).length;
   
   console.log(`语音预加载完成: ${successCount}/${allTexts.length} 个音频加载成功`);
+  return { successCount, totalCount: allTexts.length };
+};
+
+// 预加载汉字读音
+export const preloadCharacterAudios = async (characters: string[]) => {
+  const results = await Promise.allSettled(
+    characters.map(async (character) => {
+      try {
+        const response = await getMp3(character);
+        if (response.ok) {
+          const audioData = await response.json();
+          if (audioData.status === 1 && audioData.data?.file_url) {
+            const audio = new Audio(audioData.data.file_url);
+            audio.preload = 'auto';
+            audioCache.set(`character_${character}`, audio);
+            return { character, success: true };
+          }
+        }
+        return { character, success: false, reason: '音频URL获取失败' };
+      } catch (error) {
+        console.warn(`预加载汉字读音失败: ${character}`, error);
+        return { character, success: false, reason: error };
+      }
+    })
+  );
+  
+  const successCount = results.filter(result => 
+    result.status === 'fulfilled' && result.value.success
+  ).length;
+  
+  console.log(`汉字读音预加载完成: ${successCount}/${characters.length} 个音频加载成功`);
+  return { successCount, totalCount: characters.length };
+};
+
+// 播放汉字读音
+export const playCharacterAudio = async (character: string) => {
+  let audio = audioCache.get(`character_${character}`);
+  
+  if (audio) {
+    // 使用预加载的音频
+    audio.currentTime = 0;
+    audio.play().catch(error => {
+      console.error('预加载汉字读音播放失败:', error);
+    });
+  } else {
+    // 预加载失败时，实时获取音频
+    console.warn(`未找到预加载的汉字读音，实时获取: ${character}`);
+    try {
+      const response = await getMp3(character);
+      if (response.ok) {
+        const audioData = await response.json();
+        if (audioData.status === 1 && audioData.data?.file_url) {
+          audio = new Audio(audioData.data.file_url);
+          audio.play().catch(error => {
+            console.error('实时汉字读音播放失败:', error);
+          });
+          // 缓存这个音频供下次使用
+          audioCache.set(`character_${character}`, audio);
+        }
+      }
+    } catch (error) {
+      console.error('实时获取汉字读音失败:', error);
+    }
+  }
 };
 
 // 播放随机语音提示
-export const playRandomVoicePrompt = async (type: 'unknown' | 'known' | 'remove') => {
+export const playRandomVoicePrompt = async (type: 'unknown' | 'known' | 'remove' | 'success' | 'failure') => {
   const texts = VOICE_TEXTS[type];
   const randomText = texts[Math.floor(Math.random() * texts.length)];
   let audio = audioCache.get(randomText);

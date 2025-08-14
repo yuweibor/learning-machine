@@ -409,13 +409,12 @@ $interactive-color: #52c41a;
     }
     
     .study-content, .level-content {
-      padding-top: 60px;
       max-width: none;
       margin: 0;
       
       .character-cards-section {
         overflow-y: auto;
-        padding: 8px;
+        padding: 16px;
         background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
         
         .character-cards-container {

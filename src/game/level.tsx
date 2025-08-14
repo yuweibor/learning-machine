@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Progress, Typography, Row, Col, Tag, Drawer } from 'antd';
-import { ArrowLeftOutlined, TrophyOutlined, StarOutlined, LockOutlined, MenuOutlined, BarChartOutlined } from '@ant-design/icons';
+import { Card, Button, Typography, Row, Col, Tag, Layout, Space, Flex } from 'antd';
+import {
+  ArrowLeftOutlined,
+  TrophyOutlined,
+  FireOutlined,
+  CrownOutlined,
+  ThunderboltOutlined,
+  RocketOutlined,
+  StarTwoTone
+} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
-const { Title, Paragraph } = Typography;
+const { Title } = Typography;
+const { Header, Content } = Layout;
 
 const LevelPage: React.FC = () => {
   const navigate = useNavigate();
-  const [drawerVisible, setDrawerVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   // 检测屏幕尺寸
@@ -15,10 +23,10 @@ const LevelPage: React.FC = () => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
@@ -29,234 +37,216 @@ const LevelPage: React.FC = () => {
   const levels = [
     {
       id: 1,
-      title: '新手村',
-      difficulty: '简单',
-      stars: 3,
+      title: '初出茅庐',
+      difficulty: '入门',
       completed: true,
-      locked: false,
-      description: '适合初学者的简单关卡'
+      description: '学习基础汉字，建立语言基础',
+      icon: FireOutlined,
+      color: '#52c41a',
+      gradient: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)'
     },
     {
       id: 2,
-      title: '森林试炼',
-      difficulty: '普通',
-      stars: 2,
+      title: '小试牛刀',
+      difficulty: '初级',
       completed: true,
-      locked: false,
-      description: '需要一定策略的中等难度关卡'
+      description: '掌握常用汉字，提升识字能力',
+      icon: CrownOutlined,
+      color: '#faad14',
+      gradient: 'linear-gradient(135deg, #faad14 0%, #ffc53d 100%)'
     },
     {
       id: 3,
-      title: '山峰挑战',
-      difficulty: '困难',
-      stars: 0,
+      title: '渐进佳境',
+      difficulty: '中级',
       completed: false,
-      locked: false,
-      description: '考验高级技巧的困难关卡'
+      description: '学习复杂汉字，增强理解能力',
+      icon: ThunderboltOutlined,
+      color: '#fa8c16',
+      gradient: 'linear-gradient(135deg, #fa8c16 0%, #ffa940 100%)'
     },
     {
       id: 4,
-      title: '终极试炼',
-      difficulty: '专家',
-      stars: 0,
+      title: '成竹在胸',
+      difficulty: '高级',
       completed: false,
-      locked: true,
-      description: '只有真正的高手才能通过'
+      description: '挑战高难度汉字，达到熟练水平',
+      icon: RocketOutlined,
+      color: '#f5222d',
+      gradient: 'linear-gradient(135deg, #f5222d 0%, #ff4d4f 100%)'
+    },
+    {
+      id: 5,
+      title: '炉火纯青',
+      difficulty: '专家',
+      completed: false,
+      description: '精通汉字运用，成为识字专家',
+      icon: StarTwoTone,
+      color: '#cf1322',
+      gradient: 'linear-gradient(135deg, #cf1322 0%, #f5222d 100%)'
     }
   ];
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case '简单': return 'green';
-      case '普通': return 'blue';
-      case '困难': return 'orange';
-      case '专家': return 'red';
+      case '入门': return 'green';
+      case '初级': return 'blue';
+      case '中级': return 'orange';
+      case '高级': return 'magenta';
+      case '专家': return 'purple';
       default: return 'default';
     }
   };
 
-  const renderStars = (stars: number) => {
-    return Array.from({ length: 3 }, (_, index) => (
-      <StarOutlined 
-        key={index}
-        style={{ 
-          color: index < stars ? '#faad14' : '#d9d9d9',
-          fontSize: '16px',
-          marginRight: '4px'
-        }} 
-      />
-    ));
+
+
+  const handleLevelClick = (level: any) => {
+    // 导航到具体关卡的逻辑
+    console.log('进入关卡:', level.title);
+    if (level.id === 1) {
+      // 初出茅庐关卡 - 打地鼠游戏
+      navigate('/whack-a-mole');
+    }
   };
 
-  const renderProgressCard = () => (
-    <Card title="游戏进度" style={{ marginBottom: '24px' }}>
-      <div style={{ marginBottom: '16px' }}>
-        <span>总体进度：</span>
-        <Progress percent={50} status="active" style={{ marginLeft: '16px' }} />
-      </div>
-      <div>
-        <span>已获得星星：</span>
-        <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#faad14', marginLeft: '8px' }}>
-          5/12 ⭐
-        </span>
-      </div>
-    </Card>
-  );
-
   return (
-    <div className="level-page">
-      <div className="level-header">
-        <Button 
-          icon={<ArrowLeftOutlined />} 
-          onClick={handleBack}
-          type="text"
-          size={isMobile ? "middle" : "large"}
-        >
-          {isMobile ? "返回" : "返回主页"}
-        </Button>
-        <Title level={2} style={{ textAlign: 'center', margin: isMobile ? '0' : '20px 0' }}>
-          <TrophyOutlined style={{ marginRight: '8px', color: '#faad14' }} />
-          关卡模式
-        </Title>
-        {isMobile && (
-          <Button
-            icon={<BarChartOutlined />}
-            onClick={() => setDrawerVisible(true)}
-            type="text"
-            size="middle"
-          >
-            进度
-          </Button>
-        )}
-      </div>
+    <Layout style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+      <Header style={{ 
+        height: '80px',
+        background: 'transparent',
+        padding: '0 20px',
+        position: 'relative'
+      }}>
+        <Flex justify="center" align="center" style={{ height: '100%' }}>
+          <div style={{ 
+            position: 'absolute', 
+            left: '20px'
+          }}>
+            <Button
+              icon={<ArrowLeftOutlined />}
+              onClick={handleBack}
+              type="text"
+              size={isMobile ? "middle" : "large"}
+              style={{ color: '#fff' }}
+            >
+              {isMobile ? "返回" : "返回主页"}
+            </Button>
+          </div>
+          <Title level={isMobile ? 2 : 1} style={{ color: '#fff', margin: '0' }}>
+            <TrophyOutlined style={{ marginRight: '12px', color: '#faad14' }} />
+            关卡模式
+          </Title>
+        </Flex>
+      </Header>
 
-      <div className="level-content">
+      <Content style={{ padding: '20px' }}>
         {isMobile ? (
           // 移动端布局
-          <>
-            <div className="character-cards-section">
-              <div className="character-cards-container">
-                {levels.map((level) => (
-                  <div key={level.id} className="character-card">
-                    <div className="card-inner">
-                      <div className="card-front">
-                        <div className="character" style={{ 
-                          background: `linear-gradient(135deg, ${getDifficultyColor(level.difficulty)} 0%, #f0f0f0 100%)`,
+          <Space direction="vertical" size="large" style={{ width: '100%', marginTop: 10 }}>
+              {levels.map((level) => {
+                const IconComponent = level.icon;
+                return (
+                  <Card
+                    key={level.id}
+                    hoverable
+                    onClick={() => handleLevelClick(level)}
+                    style={{
+                      backgroundImage: level.gradient,
+                      border: 'none',
+                      borderRadius: '16px'
+                    }}
+                    styles={{
+                      body: { padding: '20px', textAlign: 'center' }
+                    }}
+                  >
+                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                      <Flex justify="center">
+                        <div style={{
+                          background: level.gradient,
                           borderRadius: '50%',
                           width: '80px',
                           height: '80px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          margin: '0 auto 10px',
-                          position: 'relative'
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.1)'
                         }}>
-                          {level.locked ? (
-                            <LockOutlined style={{ fontSize: '24px', color: '#999' }} />
-                          ) : (
-                            <TrophyOutlined style={{ fontSize: '24px', color: '#fff' }} />
-                          )}
-                          <div style={{ position: 'absolute', top: '-5px', right: '-5px' }}>
-                            {renderStars(level.stars)}
-                          </div>
+                          <IconComponent style={{ fontSize: '28px', color: '#fff' }} />
                         </div>
-                        <div className="pinyin">{level.title}</div>
-                        <div className="word">
-                           <Tag color={getDifficultyColor(level.difficulty)}>
-                             {level.difficulty}
-                           </Tag>
-                         </div>
-                        <div className="meaning">{level.description}</div>
-                        <div style={{ marginTop: '10px' }}>
-                          {level.locked ? (
-                            <Button size="small" disabled>🔒 已锁定</Button>
-                          ) : level.completed ? (
-                            <Button size="small" type="default">重新挑战</Button>
-                          ) : (
-                            <Button size="small" type="primary">开始挑战</Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <Drawer
-              title="游戏进度"
-              placement="right"
-              onClose={() => setDrawerVisible(false)}
-              open={drawerVisible}
-              className="mobile-drawer"
-              width={320}
-            >
-              <div className="drawer-content">
-                {renderProgressCard()}
-              </div>
-            </Drawer>
-          </>
+                      </Flex>
+                      <Title level={4} style={{ color: '#fff', margin: 0 }}>
+                        {level.title}
+                      </Title>
+                      <Tag color={getDifficultyColor(level.difficulty)} style={{ fontSize: '12px' }}>
+                        {level.difficulty}
+                      </Tag>
+                      <Typography.Text style={{ color: '#fff', opacity: 0.9 }}>
+                        {level.description}
+                      </Typography.Text>
+                    </Space>
+                  </Card>
+                );              })}          </Space>
         ) : (
           // 桌面端布局
-          <>
-            {renderProgressCard()}
-            <Row gutter={[16, 16]}>
-              {levels.map((level) => (
-                <Col xs={24} sm={12} md={8} lg={6} key={level.id}>
+          <Row gutter={[24, 24]} justify="center">
+            {levels.map((level) => {
+              const IconComponent = level.icon;
+              return (
+                <Col xs={24} sm={12} md={8} lg={6} xl={4} key={level.id}>
                   <Card
-                    hoverable={!level.locked}
-                    style={{ 
-                      opacity: level.locked ? 0.6 : 1,
-                      position: 'relative'
+                    hoverable
+                    onClick={() => handleLevelClick(level)}
+                    style={{
+                      opacity: 1,
+                      borderRadius: '16px',
+                      overflow: 'hidden',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      transform: 'translateY(0)',
                     }}
+                    bodyStyle={{ padding: '20px' }}
                     cover={
-                      <div style={{ 
-                        height: '120px', 
-                        background: `linear-gradient(135deg, ${getDifficultyColor(level.difficulty)} 0%, #f0f0f0 100%)`,
+                      <div style={{
+                        height: '140px',
+                        background: level.gradient,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         position: 'relative'
                       }}>
-                        {level.locked ? (
-                          <LockOutlined style={{ fontSize: '32px', color: '#999' }} />
-                        ) : (
-                          <TrophyOutlined style={{ fontSize: '32px', color: '#fff' }} />
-                        )}
-                        <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
-                          {renderStars(level.stars)}
-                        </div>
+                        <IconComponent style={{ fontSize: '40px', color: '#fff' }} />
                       </div>
                     }
-                    actions={[
-                      level.locked ? (
-                        <Button disabled>🔒 已锁定</Button>
-                      ) : level.completed ? (
-                        <Button type="default">重新挑战</Button>
-                      ) : (
-                        <Button type="primary">开始挑战</Button>
-                      )
-                    ]}
                   >
                     <Card.Meta
                       title={
-                        <div>
-                          {level.title}
-                          <Tag color={getDifficultyColor(level.difficulty)} style={{ marginLeft: '8px' }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
+                            {level.title}
+                          </div>
+                          <Tag color={getDifficultyColor(level.difficulty)} style={{ fontSize: '12px' }}>
                             {level.difficulty}
                           </Tag>
                         </div>
                       }
-                      description={level.description}
+                      description={
+                        <div style={{ textAlign: 'center' }}>
+                          <p style={{ margin: '12px 0', color: '#666', fontSize: '14px' }}>
+                            {level.description}
+                          </p>
+                        </div>
+                      }
                     />
                   </Card>
                 </Col>
-              ))}
-            </Row>
-          </>
+              );
+            })}
+          </Row>
         )}
-      </div>
-    </div>
+      </Content>
+    </Layout>
   );
 };
 

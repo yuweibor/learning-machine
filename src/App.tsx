@@ -8,11 +8,11 @@ const App: React.FC = () => {
   const navigate = useNavigate();
 
   const handleStudyClick = () => {
-    navigate('/game/study');
+    navigate('/study');
   };
 
   const handleLevelClick = () => {
-    navigate('/game/level');
+    navigate('/level');
   };
 
   const handleInteractiveClick = () => {
@@ -74,8 +74,8 @@ const App: React.FC = () => {
           <Col xs={24} sm={24} md={8} lg={8} xl={8}>
             <Card 
                title="学习模式" 
-               bordered={false}
-               className="game-mode-card learning"
+               variant="borderless"
+               className="game-mode-card study"
                actions={[
                  <Button type="primary" icon={<BookOutlined />} onClick={handleStudyClick}>开始学习</Button>
                ]}
@@ -87,7 +87,7 @@ const App: React.FC = () => {
           <Col xs={24} sm={24} md={8} lg={8} xl={8}>
             <Card 
                title="关卡模式" 
-               bordered={false}
+               variant="borderless"
                className="game-mode-card challenge"
                actions={[
                  <Button type="primary" icon={<TrophyOutlined />} onClick={handleLevelClick}>挑战关卡</Button>
@@ -100,7 +100,7 @@ const App: React.FC = () => {
           <Col xs={24} sm={24} md={8} lg={8} xl={8}>
             <Card 
                title="互动模式" 
-               bordered={false}
+               variant="borderless"
                className="game-mode-card interactive"
                actions={[
                  <Button type="primary" icon={<TeamOutlined />} onClick={handleInteractiveClick}>开始互动</Button>

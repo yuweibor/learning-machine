@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Button, Steps, Typography, Row, Col, message, Drawer } from 'antd';
+import { Card, Button, Steps, Typography, Row, Col, message, Drawer, Layout, Space, Flex } from 'antd';
 import { ArrowLeftOutlined, BookOutlined, CheckCircleOutlined, PlayCircleOutlined, ReloadOutlined, MenuOutlined, BarChartOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { throttle } from 'lodash';
@@ -8,6 +8,7 @@ import CharacterCard from '../components/CharacterCard';
 
 const { Title, Paragraph } = Typography;
 const { Step } = Steps;
+const { Header, Content } = Layout;
 
 const StudyPage: React.FC = () => {
   const navigate = useNavigate();
@@ -322,7 +323,7 @@ const StudyPage: React.FC = () => {
   };
 
   const renderStatsCard = () => (
-    <Card title="学习统计" bordered={false} style={{ margin: '16px 0' }}>
+    <Card title="学习统计" variant="borderless" style={{ margin: '16px 0' }}>
       <Row gutter={[16, 24]}>
         <Col span={12}>
           <div style={{ textAlign: 'center', padding: '12px' }}>
@@ -373,30 +374,52 @@ const StudyPage: React.FC = () => {
   );
 
   return (
-    <div className="study-page">
-      <div className="study-header">
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={handleBack}
-          type="text"
-          size={isMobile ? "middle" : "large"}
-        >
-          {isMobile ? "返回" : "返回主页"}
-        </Button>
-        <Title level={2}>学习模式</Title>
-        {isMobile && (
-          <Button
-            icon={<MenuOutlined />}
-            onClick={() => setDrawerVisible(true)}
-            type="text"
-            size="middle"
-          >
-            菜单
-          </Button>
-        )}
-      </div>
+    <Layout style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+      <Header style={{ 
+        height: '80px',
+        background: 'transparent',
+        padding: '0 20px',
+        position: 'relative'
+      }}>
+        <Flex justify="center" align="center" style={{ height: '100%' }}>
+          <div style={{ 
+            position: 'absolute', 
+            left: '20px'
+          }}>
+            <Button
+              icon={<ArrowLeftOutlined />}
+              onClick={handleBack}
+              type="text"
+              size={isMobile ? "middle" : "large"}
+              style={{ color: '#fff' }}
+            >
+              {isMobile ? "返回" : "返回主页"}
+            </Button>
+          </div>
+          {isMobile && (
+            <div style={{ 
+              position: 'absolute', 
+              right: '20px'
+            }}>
+              <Button
+                icon={<MenuOutlined />}
+                onClick={() => setDrawerVisible(true)}
+                type="text"
+                size="middle"
+                style={{ color: '#fff' }}
+              >
+                菜单
+              </Button>
+            </div>
+          )}
+          <Title level={isMobile ? 2 : 1} style={{ color: '#fff', margin: '0' }}>
+            <BookOutlined style={{ marginRight: '12px', color: '#52c41a' }} />
+            学习模式
+          </Title>
+        </Flex>
+      </Header>
 
-      <div className="study-content">
+      <Content style={{ padding: '20px' }}>
         {isMobile ? (
           // 移动端布局
           <>
@@ -523,8 +546,8 @@ const StudyPage: React.FC = () => {
           </div>
           </>
         )}
-      </div>
-    </div>
+      </Content>
+    </Layout>
   );
 };
 
