@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import MusicPlayer from './components/MusicPlayer';
-import { preloadVoicePrompts, getMusicList } from './services';
+import { getMusicList } from './services';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,13 +10,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [musicList, setMusicList] = useState<string[]>([]);
 
   useEffect(() => {
-    // 预加载语音提示
-    preloadVoicePrompts().then(() => {
-      console.log('语音提示预加载完成');
-    }).catch(error => {
-      console.error('语音提示预加载失败:', error);
-    });
-
     // 初始化音乐列表
     const initMusicList = async () => {
       try {

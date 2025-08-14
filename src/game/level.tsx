@@ -109,6 +109,9 @@ const LevelPage: React.FC = () => {
     } else if (level.id === 2) {
       // 小试牛刀关卡 - 16宫格游戏
       navigate('/trial');
+    } else if (level.id === 3) {
+      // 渐进佳境关卡 - 小蜜蜂游戏
+      navigate('/bee-game');
     }
   };
 

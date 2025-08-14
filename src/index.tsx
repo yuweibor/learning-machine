@@ -7,6 +7,7 @@ import StudyPage from './game/study';
 import LevelPage from './game/level';
 import WhackAMolePage from './game/whack-a-mole';
 import TrialPage from './game/trial';
+import BeeGame from './components/BeeGame';
 import './index.css';
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -22,6 +23,7 @@ root.render(
           <Route path="/level" element={<LevelPage />} />
           <Route path="/whack-a-mole" element={<WhackAMolePage />} />
           <Route path="/trial" element={<TrialPage />} />
+          <Route path="/bee-game" element={<BeeGame />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

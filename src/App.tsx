@@ -16,8 +16,7 @@ const App: React.FC = () => {
   };
 
   const handleInteractiveClick = () => {
-    // 暂时显示提示，后续可以添加互动模式页面
-    alert('互动模式即将上线，敬请期待！');
+    navigate('/bee-game');
   };
 
   useEffect(() => {
