@@ -106,6 +106,9 @@ const LevelPage: React.FC = () => {
     if (level.id === 1) {
       // 初出茅庐关卡 - 打地鼠游戏
       navigate('/whack-a-mole');
+    } else if (level.id === 2) {
+      // 小试牛刀关卡 - 16宫格游戏
+      navigate('/trial');
     }
   };
 

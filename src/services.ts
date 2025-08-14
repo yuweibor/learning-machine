@@ -27,6 +27,35 @@ export const getImg = async (name: string) => {
     }
   }
 };
+// 获取音频URL，带指纹缓存机制
+export const getMp3WithCache = async (name: string): Promise<string | null> => {
+  // 检查指纹缓存
+  const cachedUrl = urlFingerprintCache.get(name);
+  if (cachedUrl) {
+    console.log(`使用缓存的音频URL: ${name} -> ${cachedUrl}`);
+    return cachedUrl;
+  }
+
+  // 如果缓存中没有，则请求新的URL
+  try {
+    const response = await getMp3(name);
+    if (response.ok) {
+      const audioData = await response.json();
+      if (audioData.status === 1 && audioData.data?.file_url) {
+        const url = audioData.data.file_url;
+        // 缓存URL指纹
+        urlFingerprintCache.set(name, url);
+        console.log(`缓存新的音频URL: ${name} -> ${url}`);
+        return url;
+      }
+    }
+  } catch (error) {
+    console.error(`获取音频URL失败: ${name}`, error);
+  }
+  
+  return null;
+};
+
 export const getMp3 = (name: string) => {
   const formData = new URLSearchParams();
   formData.append('text', name);
@@ -69,6 +98,9 @@ const VOICE_TEXTS = {
 // 预加载的音频缓存
 const audioCache = new Map<string, HTMLAudioElement>();
 
+// URL指纹缓存 - 使用文件名作为指纹映射到URL
+const urlFingerprintCache = new Map<string, string>();
+
 // 检查音频是否已缓存
 export const isAudioCached = (characters: string[]): boolean => {
   // 检查所有语音提示是否已缓存
@@ -89,15 +121,12 @@ export const preloadVoicePrompts = async () => {
   const results = await Promise.allSettled(
     allTexts.map(async (text) => {
       try {
-        const response = await getMp3(text);
-        if (response.ok) {
-          const audioData = await response.json();
-          if (audioData.status === 1 && audioData.data?.file_url) {
-            const audio = new Audio(audioData.data.file_url);
-            audio.preload = 'auto';
-            audioCache.set(text, audio);
-            return { text, success: true };
-          }
+        const audioUrl = await getMp3WithCache(text);
+        if (audioUrl) {
+          const audio = new Audio(audioUrl);
+          audio.preload = 'auto';
+          audioCache.set(text, audio);
+          return { text, success: true };
         }
         return { text, success: false, reason: '音频URL获取失败' };
       } catch (error) {
@@ -120,15 +149,12 @@ export const preloadCharacterAudios = async (characters: string[]) => {
   const results = await Promise.allSettled(
     characters.map(async (character) => {
       try {
-        const response = await getMp3(character);
-        if (response.ok) {
-          const audioData = await response.json();
-          if (audioData.status === 1 && audioData.data?.file_url) {
-            const audio = new Audio(audioData.data.file_url);
-            audio.preload = 'auto';
-            audioCache.set(`character_${character}`, audio);
-            return { character, success: true };
-          }
+        const audioUrl = await getMp3WithCache(character);
+        if (audioUrl) {
+          const audio = new Audio(audioUrl);
+          audio.preload = 'auto';
+          audioCache.set(`character_${character}`, audio);
+          return { character, success: true };
         }
         return { character, success: false, reason: '音频URL获取失败' };
       } catch (error) {
@@ -160,17 +186,14 @@ export const playCharacterAudio = async (character: string) => {
     // 预加载失败时，实时获取音频
     console.warn(`未找到预加载的汉字读音，实时获取: ${character}`);
     try {
-      const response = await getMp3(character);
-      if (response.ok) {
-        const audioData = await response.json();
-        if (audioData.status === 1 && audioData.data?.file_url) {
-          audio = new Audio(audioData.data.file_url);
-          audio.play().catch(error => {
-            console.error('实时汉字读音播放失败:', error);
-          });
-          // 缓存这个音频供下次使用
-          audioCache.set(`character_${character}`, audio);
-        }
+      const audioUrl = await getMp3WithCache(character);
+      if (audioUrl) {
+        audio = new Audio(audioUrl);
+        audio.play().catch(error => {
+          console.error('实时汉字读音播放失败:', error);
+        });
+        // 缓存这个音频供下次使用
+        audioCache.set(`character_${character}`, audio);
       }
     } catch (error) {
       console.error('实时获取汉字读音失败:', error);
@@ -194,20 +217,32 @@ export const playRandomVoicePrompt = async (type: 'unknown' | 'known' | 'remove'
     // 预加载失败时，实时获取音频
     console.warn(`未找到预加载的语音，实时获取: ${randomText}`);
     try {
-      const response = await getMp3(randomText);
-      if (response.ok) {
-        const audioData = await response.json();
-        if (audioData.status === 1 && audioData.data?.file_url) {
-          audio = new Audio(audioData.data.file_url);
-          audio.play().catch(error => {
-            console.error('实时语音播放失败:', error);
-          });
-          // 缓存这个音频供下次使用
-          audioCache.set(randomText, audio);
-        }
+      const audioUrl = await getMp3WithCache(randomText);
+      if (audioUrl) {
+        audio = new Audio(audioUrl);
+        audio.play().catch(error => {
+          console.error('实时语音播放失败:', error);
+        });
+        // 缓存这个音频供下次使用
+        audioCache.set(randomText, audio);
       }
     } catch (error) {
       console.error('实时获取语音失败:', error);
     }
   }
+};
+
+// 清除URL指纹缓存（可选，用于调试或重置）
+export const clearUrlFingerprintCache = () => {
+  urlFingerprintCache.clear();
+  console.log('URL指纹缓存已清除');
+};
+
+// 获取当前缓存状态（可选，用于调试）
+export const getCacheStatus = () => {
+  return {
+    urlCacheSize: urlFingerprintCache.size,
+    audioCacheSize: audioCache.size,
+    urlCacheEntries: Array.from(urlFingerprintCache.entries())
+  };
 };

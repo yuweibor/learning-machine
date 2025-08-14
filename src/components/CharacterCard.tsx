@@ -3,7 +3,7 @@ import { Spin, Button } from 'antd';
 import { CheckOutlined, CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { debounce } from 'lodash';
 import { Character } from '../data/characters';
-import { getImg, getMp3, playRandomVoicePrompt } from '../services';
+import { getImg, getMp3WithCache, playRandomVoicePrompt } from '../services';
 
 interface CharacterCardProps {
   character: Character;
@@ -35,15 +35,13 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMark
       console.log('开始加载卡片数据:', character.character, character.word);
 
       // 并行加载图片和音频
-      const [imageResponse, audioResponse] = await Promise.all([
+      const [imageResponse, audioUrlResult] = await Promise.all([
         getImg(character.word), // 使用组词获取图片
-        getMp3(`${character.character},${character.word}`) // 使用"字,词"格式获取音频
+        getMp3WithCache(`${character.character},${character.word}`) // 使用"字,词"格式获取音频，带缓存
       ]);
 
-      console.log('音频请求响应状态:', audioResponse.status, audioResponse.ok);
-
       let imageUrl = '';
-      let audioUrl = '';
+      let audioUrl = audioUrlResult || ''; // 将null转换为空字符串
 
       // 处理图片响应
       if (imageResponse.ok) {
@@ -52,18 +50,11 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onFlip, onMark
         console.log('图片URL获取成功:', imageUrl);
       }
 
-      // 处理音频响应
-      if (audioResponse.ok) {
-        const audioData = await audioResponse.json();
-        console.log('音频API响应数据:', audioData);
-        if (audioData.status === 1 && audioData.data?.file_url) {
-          audioUrl = audioData.data.file_url;
-          console.log('音频URL获取成功:', audioUrl);
-        } else {
-          console.log('音频URL获取失败，响应数据:', audioData);
-        }
+      // 音频URL已通过缓存机制获取
+      if (audioUrl) {
+        console.log('音频URL获取成功:', audioUrl);
       } else {
-        console.log('音频请求失败，状态码:', audioResponse.status);
+        console.log('音频URL获取失败');
       }
 
       setCardData({

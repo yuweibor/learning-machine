@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Button, Steps, Typography, Row, Col, message, Drawer, Layout, Space, Flex } from 'antd';
+import { Card, Button, Steps, Typography, Row, Col, Drawer, Layout, Space, Flex } from 'antd';
 import { ArrowLeftOutlined, BookOutlined, CheckCircleOutlined, PlayCircleOutlined, ReloadOutlined, MenuOutlined, BarChartOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { throttle } from 'lodash';
@@ -133,7 +133,7 @@ const StudyPage: React.FC = () => {
         setStudyCharacters(characters);
         setNextLoadIndex(nextLoadIndex + characters.length); // 更新下一次加载的索引
         setCurrentStep(1); // 进入学习发音阶段
-        message.success(`已为您准备了12个汉字（第${nextLoadIndex + 1}-${nextLoadIndex + characters.length}个），点击卡片开始学习！`);
+        console.log(`已为您准备了12个汉字（第${nextLoadIndex + 1}-${nextLoadIndex + characters.length}个），点击卡片开始学习！`);
         // 检查是否还有更多数据
         setHasMoreData(nextLoadIndex + characters.length < totalCharacters);
         hasInitialized.current = true;
@@ -148,11 +148,11 @@ const StudyPage: React.FC = () => {
   /**
    * 统一的加载更多汉字方法
    * 适用于移动端滚动加载和PC端按钮加载
-   * @param showMessage 是否显示加载成功的消息提示
+   * @param showConsoleLog 是否显示加载成功的控制台日志
    * @param triggerSource 触发来源：'scroll' | 'button'
    * @returns Promise<boolean> 返回是否还有更多数据可加载
    */
-  const loadMoreCharacters = async (showMessage: boolean = false, triggerSource: 'scroll' | 'button' = 'scroll'): Promise<boolean> => {
+  const loadMoreCharacters = async (showConsoleLog: boolean = false, triggerSource: 'scroll' | 'button' = 'scroll'): Promise<boolean> => {
     // 防止重复加载
     if (isLoadingMore) {
       return false;
@@ -160,8 +160,8 @@ const StudyPage: React.FC = () => {
     
     // 检查是否还有更多数据
     if (!hasMoreData) {
-      if (showMessage) {
-        message.info('已经加载了所有汉字！');
+      if (showConsoleLog) {
+        console.log('已经加载了所有汉字！');
       }
       return false;
     }
@@ -174,8 +174,8 @@ const StudyPage: React.FC = () => {
       
       // 检查是否已经加载了所有汉字
       if (currentNextLoadIndex >= totalCharacters) {
-        if (showMessage) {
-          message.info('已经加载了所有汉字！');
+        if (showConsoleLog) {
+        console.log('已经加载了所有汉字！');
         }
         setHasMoreData(false);
         return false;
@@ -203,14 +203,14 @@ const StudyPage: React.FC = () => {
       setHasMoreData(stillHasMore);
       
       // 显示加载成功消息（仅在按钮触发时显示）
-      if (showMessage) {
-        message.success(`已加载第${currentStartIndex + 1}-${currentStartIndex + loadCount}个汉字`);
+      if (showConsoleLog) {
+        console.log(`已加载第${currentStartIndex + 1}-${currentStartIndex + loadCount}个汉字`);
       }
       
       return stillHasMore;
     } catch (error) {
       console.error('加载汉字时出错:', error);
-      message.error('加载汉字失败，请重试');
+      console.log('加载汉字失败，请重试');
       return false;
     } finally {
       setIsLoadingMore(false);
@@ -248,7 +248,7 @@ const StudyPage: React.FC = () => {
         newWords: newUnknownWords.size
       }));
       
-      message.success('已添加到熟词本！');
+      console.log('已添加到熟词本！');
     } else {
       // 标记为未知（生词）
       const newUnknownWords = new Set(unknownWords);
@@ -268,7 +268,7 @@ const StudyPage: React.FC = () => {
         newWords: newUnknownWords.size
       }));
       
-      message.success('已添加到生词本！');
+      console.log('已添加到生词本！');
     }
   };
 
@@ -293,7 +293,7 @@ const StudyPage: React.FC = () => {
       newWords: newUnknownWords.size
     }));
     
-    message.success('已移除该汉字的学习状态！');
+    console.log('已移除该汉字的学习状态！');
    };
 
   // 获取汉字的已知状态
