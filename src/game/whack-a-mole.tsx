@@ -3,7 +3,7 @@ import { Card, Button, Typography, Layout, Space, Row, Col, message } from 'antd
 import { ArrowLeftOutlined, PlayCircleOutlined, SoundOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { Character, chineseCharacters } from '../data/characters';
-import { playRandomVoicePrompt, getMp3, preloadVoicePrompts, preloadCharacterAudios, playCharacterAudio } from '../services';
+import { playRandomVoicePrompt, getMp3, preloadVoicePrompts, preloadCharacterAudios, playCharacterAudio, isAudioCached } from '../services';
 
 const { Title, Text } = Typography;
 const { Header, Content } = Layout;
@@ -87,6 +87,15 @@ const WhackAMolePage: React.FC = () => {
 
   // 预加载音频
   const preloadAudios = useCallback(async (targetChars: Character[]) => {
+    // 检查是否已经缓存了所需的音效
+    const characters = targetChars.map(char => char.character);
+    
+    if (isAudioCached(characters)) {
+      // 如果已缓存，直接跳过加载界面
+      console.log('音效已缓存，跳过加载过程');
+      return;
+    }
+    
     setGameState(prev => ({ ...prev, gameStatus: 'loading', loadingProgress: 0, loadingText: '正在加载音效...' }));
     
     // 预加载语音提示
@@ -94,7 +103,6 @@ const WhackAMolePage: React.FC = () => {
     setGameState(prev => ({ ...prev, loadingProgress: 30, loadingText: `音效加载: ${voiceResult.successCount}/${voiceResult.totalCount}` }));
     
     // 预加载汉字读音
-    const characters = targetChars.map(char => char.character);
     const characterResult = await preloadCharacterAudios(characters);
     setGameState(prev => ({ ...prev, loadingProgress: 80, loadingText: `汉字读音加载: ${characterResult.successCount}/${characterResult.totalCount}` }));
     
@@ -121,12 +129,12 @@ const WhackAMolePage: React.FC = () => {
       const unknownCharacters = chineseCharacters.filter(char => 
         unknownWords.includes(char.id.toString())
       );
-      targetChars = unknownCharacters.slice(0, 10);
+      targetChars = unknownCharacters.slice(0, 2);
     }
     
-    // 如果生词本不足10个，从全部字符中随机补充
-    if (targetChars.length < 10) {
-      const remainingCount = 10 - targetChars.length;
+    // 如果生词本不足2个，从全部字符中随机补充
+    if (targetChars.length < 2) {
+      const remainingCount = 2 - targetChars.length;
       const usedIds = new Set(targetChars.map(char => char.id));
       const availableChars = chineseCharacters.filter(char => !usedIds.has(char.id));
       
@@ -162,7 +170,7 @@ const WhackAMolePage: React.FC = () => {
     gameTimerRef.current = setTimeout(() => {
       flipNextCard(targetChars, targetChars[0]);
     }, 1000);
-  }, [clearAllTimers, preloadAudios]);
+  }, [clearAllTimers]);
 
   // 组件加载时自动开始游戏初始化
   useEffect(() => {
@@ -244,8 +252,15 @@ const WhackAMolePage: React.FC = () => {
       const newConsecutiveCorrect = gameState.consecutiveCorrect + 1;
       message.success(`正确！${clickedCharacter.character} (${newConsecutiveCorrect}/3)`);
       
-      // 播放成功音效
-      playRandomVoicePrompt('success');
+      // 先播放目标字的读音
+      if (gameState.currentTarget) {
+        playCharacterAudio(gameState.currentTarget.character);
+      }
+      
+      // 1秒后播放鼓励音效
+      setTimeout(() => {
+        playRandomVoicePrompt('success');
+      }, 1000);
       
       // 立即播放卡片放大消失动画
       setAnimatingCard(index);
@@ -287,15 +302,25 @@ const WhackAMolePage: React.FC = () => {
               lastFlippedIndex: null
             }));
             
-            message.success(`目标完成！进入下一个目标：${nextTarget.character}`);
+            message.success(`目标完成！2秒后进入下一个目标：${nextTarget.character}`);
             
-            // 播放下一个目标的读音
+            // 等待2秒后播放下一个目标的读音并开始新的翻卡循环
             audioTimerRef.current = setTimeout(() => {
               playCharacterAudio(nextTarget.character);
+              // 清理现有定时器，避免重复调用
+              if (flipTimerRef.current) {
+                clearTimeout(flipTimerRef.current);
+                flipTimerRef.current = null;
+              }
+              if (gameTimerRef.current) {
+                clearTimeout(gameTimerRef.current);
+                gameTimerRef.current = null;
+              }
+              // 开始新的翻卡循环
               gameTimerRef.current = setTimeout(() => {
                 flipNextCard(gameState.targetCharacters, nextTarget);
               }, 1000);
-            }, 500);
+            }, 2000);
           }
         } else {
           // 正确但未达到3次，继续当前目标
@@ -459,7 +484,7 @@ const WhackAMolePage: React.FC = () => {
                     <Text strong>得分: {gameState.score}</Text>
                   </Col>
                   <Col span={6}>
-                    <Text strong>进度: {gameState.correctCount}/10</Text>
+                    <Text strong>进度: {gameState.correctCount}/2</Text>
                   </Col>
                   <Col span={6}>
                     <Text strong style={{ color: '#1890ff' }}>连击: {gameState.consecutiveCorrect}/3</Text>

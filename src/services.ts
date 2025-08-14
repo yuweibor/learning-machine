@@ -69,6 +69,18 @@ const VOICE_TEXTS = {
 // 预加载的音频缓存
 const audioCache = new Map<string, HTMLAudioElement>();
 
+// 检查音频是否已缓存
+export const isAudioCached = (characters: string[]): boolean => {
+  // 检查所有语音提示是否已缓存
+  const allTexts = [...VOICE_TEXTS.unknown, ...VOICE_TEXTS.known, ...VOICE_TEXTS.remove, ...VOICE_TEXTS.success, ...VOICE_TEXTS.failure];
+  const voicesCached = allTexts.every(text => audioCache.has(text));
+  
+  // 检查所有字符读音是否已缓存
+  const charactersCached = characters.every(char => audioCache.has(`character_${char}`));
+  
+  return voicesCached && charactersCached;
+};
+
 // 预加载所有语音提示
 export const preloadVoicePrompts = async () => {
   const allTexts = [...VOICE_TEXTS.unknown, ...VOICE_TEXTS.known, ...VOICE_TEXTS.remove, ...VOICE_TEXTS.success, ...VOICE_TEXTS.failure];
