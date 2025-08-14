@@ -21,6 +21,7 @@ interface GameState {
   consecutiveWrong: number;
   loadingProgress: number;
   loadingText: string;
+  totalTargets: number; // 总目标数量
 }
 
 const WhackAMolePage: React.FC = () => {
@@ -38,7 +39,8 @@ const WhackAMolePage: React.FC = () => {
     consecutiveCorrect: 0,
     consecutiveWrong: 0,
     loadingProgress: 0,
-    loadingText: ''
+    loadingText: '',
+    totalTargets: 10 // 默认10个目标
   });
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [shakeWindow, setShakeWindow] = useState(false);
@@ -61,9 +63,9 @@ const WhackAMolePage: React.FC = () => {
       clearTimeout(audioTimerRef.current);
       audioTimerRef.current = null;
     }
-  }, []);
+    }, []);
 
-  // 检测屏幕尺寸
+    // 检测屏幕尺寸
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -123,18 +125,19 @@ const WhackAMolePage: React.FC = () => {
     
     // 获取目标字符集合（优先生词本，不足则从全部字符中补充）
     let targetChars: Character[] = [];
+    const targetCount = 10; // 总共10个目标字符
     
     if (unknownWords.length > 0) {
       // 从生词本中获取字符
       const unknownCharacters = chineseCharacters.filter(char => 
         unknownWords.includes(char.id.toString())
       );
-      targetChars = unknownCharacters.slice(0, 2);
+      targetChars = unknownCharacters.slice(0, targetCount);
     }
     
-    // 如果生词本不足2个，从全部字符中随机补充
-    if (targetChars.length < 2) {
-      const remainingCount = 2 - targetChars.length;
+    // 如果生词本不足10个，从全部字符中随机补充
+    if (targetChars.length < targetCount) {
+      const remainingCount = targetCount - targetChars.length;
       const usedIds = new Set(targetChars.map(char => char.id));
       const availableChars = chineseCharacters.filter(char => !usedIds.has(char.id));
       
@@ -158,7 +161,8 @@ const WhackAMolePage: React.FC = () => {
       consecutiveCorrect: 0,
       consecutiveWrong: 0,
       loadingProgress: 100,
-      loadingText: '加载完成'
+      loadingText: '加载完成',
+      totalTargets: 10
     });
 
     // 播放第一个目标字符的读音
@@ -224,7 +228,10 @@ const WhackAMolePage: React.FC = () => {
       gameTimerRef.current = setTimeout(() => {
         setGameState(current => {
           if (current.gameStatus === 'playing' && current.currentTarget) {
-            flipNextCard(current.targetCharacters, current.currentTarget);
+            // 再次检查定时器状态，确保没有重复调用
+            if (gameTimerRef.current) {
+              flipNextCard(current.targetCharacters, current.currentTarget);
+            }
           }
           return current;
         });
@@ -273,49 +280,54 @@ const WhackAMolePage: React.FC = () => {
         if (newConsecutiveCorrect >= 3) {
           // 连续正确3次，通过当前目标
           const newCorrectCount = gameState.correctCount + 1;
-          const remainingTargets = gameState.targetCharacters.slice(newCorrectCount);
           
-          if (remainingTargets.length === 0) {
+          // 检查游戏结束条件：完成所有目标
+          if (newCorrectCount >= gameState.totalTargets) {
             // 游戏结束
             setGameState(prev => ({
-              ...prev,
-              gameStatus: 'finished',
-              score: prev.score + 30,
-              correctCount: newCorrectCount,
-              consecutiveCorrect: 0,
-              consecutiveWrong: 0
-            }));
+                ...prev,
+                gameStatus: 'finished',
+                score: prev.score + 30,
+                correctCount: newCorrectCount,
+                consecutiveCorrect: 0,
+                consecutiveWrong: 0
+              }));
             message.success('恭喜！游戏完成！');
             playRandomVoicePrompt('remove'); // 使用现有的音效
           } else {
             // 切换到下一个目标
-            const nextTarget = remainingTargets[0];
+            const nextTarget = gameState.targetCharacters[newCorrectCount];
             setGameState(prev => ({
-              ...prev,
-              currentTarget: nextTarget,
-              score: prev.score + 30,
-              correctCount: newCorrectCount,
-              consecutiveCorrect: 0,
-              consecutiveWrong: 0,
-              gridCards: Array(9).fill(null),
+                ...prev,
+                currentTarget: nextTarget,
+                score: prev.score + 30,
+                correctCount: newCorrectCount,
+                consecutiveCorrect: 0,
+                consecutiveWrong: 0,
+                gridCards: Array(9).fill(null),
               flippedIndex: null,
               lastFlippedIndex: null
             }));
             
             message.success(`目标完成！2秒后进入下一个目标：${nextTarget.character}`);
             
+            // 清理所有现有定时器，避免重复调用
+            if (flipTimerRef.current) {
+              clearTimeout(flipTimerRef.current);
+              flipTimerRef.current = null;
+            }
+            if (gameTimerRef.current) {
+              clearTimeout(gameTimerRef.current);
+              gameTimerRef.current = null;
+            }
+            if (audioTimerRef.current) {
+              clearTimeout(audioTimerRef.current);
+              audioTimerRef.current = null;
+            }
+            
             // 等待2秒后播放下一个目标的读音并开始新的翻卡循环
             audioTimerRef.current = setTimeout(() => {
               playCharacterAudio(nextTarget.character);
-              // 清理现有定时器，避免重复调用
-              if (flipTimerRef.current) {
-                clearTimeout(flipTimerRef.current);
-                flipTimerRef.current = null;
-              }
-              if (gameTimerRef.current) {
-                clearTimeout(gameTimerRef.current);
-                gameTimerRef.current = null;
-              }
               // 开始新的翻卡循环
               gameTimerRef.current = setTimeout(() => {
                 flipNextCard(gameState.targetCharacters, nextTarget);
@@ -484,7 +496,7 @@ const WhackAMolePage: React.FC = () => {
                     <Text strong>得分: {gameState.score}</Text>
                   </Col>
                   <Col span={6}>
-                    <Text strong>进度: {gameState.correctCount}/2</Text>
+                    <Text strong>进度: {gameState.correctCount}/{gameState.totalTargets}</Text>
                   </Col>
                   <Col span={6}>
                     <Text strong style={{ color: '#1890ff' }}>连击: {gameState.consecutiveCorrect}/3</Text>
@@ -520,7 +532,7 @@ const WhackAMolePage: React.FC = () => {
                     {gameState.currentTarget.character}
                   </div>
                   <div style={{ fontSize: '18px', color: '#666', marginTop: '10px' }}>
-                    {gameState.currentTarget.pinyin} - {gameState.currentTarget.meaning}
+                    {gameState.currentTarget.pinyin} - {gameState.currentTarget.meaning} - {gameState.currentTarget.word}
                   </div>
                 </Card>
               )}
