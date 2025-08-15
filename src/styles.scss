@@ -47,6 +47,11 @@ $interactive-color: #52c41a;
   min-height: 100vh;
   padding: 20px;
   background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
+  
+  // 小屏幕下移除留白
+  @media (max-width: 768px) {
+    padding: 0;
+  }
 }
 
 .game-card-container {

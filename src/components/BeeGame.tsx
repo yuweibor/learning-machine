@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { chineseCharacters, Character } from '../data/characters';
 import { preloadVoicePrompts, preloadCharacterAudios, isAudioCached } from '../services';
 import pinyin from 'tiny-pinyin';
+import Particles, { initParticlesEngine } from '@tsparticles/react';
+import { loadBasic } from '@tsparticles/basic';
+import type { Engine } from '@tsparticles/engine';
 
 interface Bee {
   id: number;
@@ -18,6 +21,18 @@ interface Bee {
   returnProgress: number; // 返回进度 0-1
 }
 
+interface ExplosionParticle {
+  id: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  color: string;
+  size: number;
+}
+
 interface GameState {
   bees: Bee[];
   playerX: number;
@@ -32,12 +47,15 @@ interface GameState {
   gameStatus: 'menu' | 'loading' | 'playing' | 'gameover';
   loadingProgress: number;
   loadingText: string;
+  isDamaged: boolean;
+  damageTime: number;
+  explosionParticles: ExplosionParticle[];
 }
 
 const BeeGame: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>({
     bees: [],
-    playerX: 400, // 屏幕中央
+    playerX: window.innerWidth / 2, // 屏幕中央
     playerHealth: 10,
     isRecording: false,
     currentPinyin: '',
@@ -48,44 +66,87 @@ const BeeGame: React.FC = () => {
     score: 0,
     gameStatus: 'menu',
     loadingProgress: 0,
-    loadingText: ''
+    loadingText: '',
+    isDamaged: false,
+    damageTime: 0,
+    explosionParticles: []
   });
 
   const [laser, setLaser] = useState<{active: boolean, x: number, targetY: number}>({ active: false, x: 0, targetY: 0 });
+  const [init, setInit] = useState(false);
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const gameLoopRef = useRef<number>(0);
   const lastAttackTimeRef = useRef<number>(0);
 
+  // 粒子初始化
+  useEffect(() => {
+    initParticlesEngine(async (engine) => {
+      await loadBasic(engine);
+    }).then(() => {
+      setInit(true);
+    });
+  }, []);
+
+  // 生成爆炸粒子
+  const createExplosionParticles = useCallback((x: number, y: number) => {
+    const particles: ExplosionParticle[] = [];
+    const colors = ['#ff6b6b', '#ffa500', '#ffff00', '#ff4757', '#ff3838'];
+    
+    for (let i = 0; i < 12; i++) {
+      const angle = (i / 12) * Math.PI * 2;
+      const speed = 2 + Math.random() * 3;
+      particles.push({
+        id: `explosion-${Date.now()}-${i}`,
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 60,
+        maxLife: 60,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: 3 + Math.random() * 4
+      });
+    }
+    
+    return particles;
+  }, []);
+
   // 获取响应式布局参数
   const getLayoutParams = () => {
     const screenWidth = window.innerWidth;
-    const gameWidth = Math.min(800, screenWidth - 40); // 游戏区域宽度
+    const screenHeight = window.innerHeight;
     const beeSize = 40;
-    const spacing = 10;
-    const totalBeeWidth = beeSize + spacing;
+    const minSpacing = 50; // 最小间距
     
-    // 根据屏幕宽度计算列数
-    const maxCols = Math.floor((gameWidth - 100) / totalBeeWidth);
-    const cols = Math.max(4, Math.min(10, maxCols)); // 最少4列，最多10列
+    // 根据屏幕宽度计算列数和间距
+    const maxCols = Math.floor(screenWidth / (beeSize + minSpacing));
+    const cols = Math.max(4, Math.min(12, maxCols)); // 最少4列，最多12列
+    
+    // 计算实际间距，确保蜂群居中
+    const totalBeesWidth = cols * beeSize + (cols - 1) * minSpacing;
+    const actualSpacing = totalBeesWidth <= screenWidth ? minSpacing : (screenWidth - cols * beeSize) / (cols - 1);
+    
+    // 计算起始X坐标，使蜂群居中
+    const startX = (screenWidth - totalBeesWidth) / 2;
     
     return {
-      gameWidth,
       cols,
       beeSize,
-      spacing: totalBeeWidth
+      spacing: beeSize + actualSpacing,
+      startX: Math.max(0, startX)
     };
   };
 
   // 初始化蜜蜂阵型
   const initializeBees = useCallback(() => {
     const selectedChars = chineseCharacters.slice(0, 20);
-    const { cols, spacing } = getLayoutParams();
+    const { cols, spacing, startX } = getLayoutParams();
     
     const bees: Bee[] = selectedChars.map((char, index) => {
       const col = index % cols;
       const row = Math.floor(index / cols);
-      const originalX = 50 + col * spacing;
+      const originalX = startX + col * spacing;
       const originalY = 80 + row * 60; // 为顶部标题栏留出空间
       
       return {
@@ -107,14 +168,14 @@ const BeeGame: React.FC = () => {
   }, []);
 
   // 计算变速进度（慢-快-慢）
-  const getEasedProgress = (linearProgress: number) => {
+  const getEasedProgress = useCallback((linearProgress: number) => {
     // 使用三次贝塞尔曲线实现慢-快-慢效果
     const t = linearProgress;
     return 3 * t * t - 2 * t * t * t;
-  };
+  }, []);
 
   // 随机生成攻击轨迹函数
-  const getRandomAttackPosition = (progress: number, startX: number, startY: number, seed: number, endX: number, endY: number = 550) => {
+  const getRandomAttackPosition = useCallback((progress: number, startX: number, startY: number, seed: number, endX: number, endY: number = 550) => {
     const easedProgress = getEasedProgress(progress);
     
     // 使用种子生成随机但一致的轨迹
@@ -135,13 +196,13 @@ const BeeGame: React.FC = () => {
       x: baseX + curveOffset,
       y: baseY
     };
-  };
+  }, [getEasedProgress]);
 
   // 存储攻击路径点
   const attackPathsRef = useRef<Map<number, Array<{x: number, y: number}>>>(new Map());
 
   // 返回原位置的轨迹函数（沿原路径返回，最后归位到目标位置）
-  const getReturnPosition = (progress: number, beeId: number, targetX: number, targetY: number) => {
+  const getReturnPosition = useCallback((progress: number, beeId: number, targetX: number, targetY: number) => {
     const pathPoints = attackPathsRef.current.get(beeId);
     if (!pathPoints || pathPoints.length === 0) {
       // 如果没有路径记录，直接返回目标位置
@@ -179,7 +240,7 @@ const BeeGame: React.FC = () => {
         y: startPoint.y + (targetY - startPoint.y) * finalProgress
       };
     }
-  };
+  }, []);
 
   // 语音识别初始化
   const initSpeechRecognition = useCallback(() => {
@@ -266,8 +327,7 @@ const BeeGame: React.FC = () => {
       
       let newState = { ...prev };
       
-      // 蜜蜂阵型左右移动
-      const formationOffset = Math.sin(currentTime * 0.001) * 50;
+      // 蜂群移动现在由CSS动画处理，无需JavaScript计算
       
       // 每5秒随机一只蜜蜂攻击
       if (currentTime - lastAttackTimeRef.current > 5000) {
@@ -287,24 +347,34 @@ const BeeGame: React.FC = () => {
         if (bee.isAttacking && !bee.isReturning) {
           const newProgress = Math.min(bee.attackProgress + 0.008, 1); // 基础攻击速度
           
-          // 攻击起始坐标：当前蜂群位置 (bee.attackStartX + formationOffset, bee.originalY)
-          // 攻击结束坐标：屏幕底部飞船位置 (newState.playerX, 550)
-          const startX = bee.attackStartX + formationOffset;
+          // 攻击起始坐标：蜜蜂原始位置 (bee.originalX, bee.originalY)
+          // 攻击结束坐标：屏幕底部飞船位置 (newState.playerX, window.innerHeight - 55)
+          const startX = bee.originalX;
           const startY = bee.originalY;
           const endX = newState.playerX;
-          const endY = 550; // 屏幕底部
+          const endY = window.innerHeight - 55; // 屏幕底部飞船中心位置
           
           const attackPos = getRandomAttackPosition(newProgress, startX, startY, bee.attackPath, endX, endY);
           
-          // 记录攻击路径点
+          // 记录攻击路径点（限制数量以避免内存泄漏）
           if (!attackPathsRef.current.has(bee.id)) {
             attackPathsRef.current.set(bee.id, []);
           }
-          attackPathsRef.current.get(bee.id)!.push({ x: attackPos.x, y: attackPos.y });
+          const pathPoints = attackPathsRef.current.get(bee.id)!;
+          pathPoints.push({ x: attackPos.x, y: attackPos.y });
+          // 限制路径点数量，只保留最近的50个点
+          if (pathPoints.length > 50) {
+            pathPoints.shift();
+          }
           
           // 检查是否撞到飞船或到达底部
           if (newProgress >= 0.9 && Math.abs(attackPos.x - newState.playerX) < 30 && !newState.shield) {
             newState.playerHealth = Math.max(0, newState.playerHealth - 1);
+            newState.isDamaged = true;
+            newState.damageTime = currentTime;
+            // 生成爆炸粒子
+            const explosionParticles = createExplosionParticles(newState.playerX, window.innerHeight - 55);
+            newState.explosionParticles = [...newState.explosionParticles, ...explosionParticles];
             if (newState.playerHealth <= 0) {
               newState.gameOver = true;
             }
@@ -341,8 +411,8 @@ const BeeGame: React.FC = () => {
           // 沿原路径返回
           const newReturnProgress = Math.min(bee.returnProgress + 0.012, 1); // 返回速度
           
-          // 返回目标坐标：当前蜂群位置 (bee.originalX + formationOffset, bee.originalY)
-          const targetX = bee.originalX + formationOffset;
+          // 返回目标坐标：蜜蜂原始位置 (bee.originalX, bee.originalY)
+          const targetX = bee.originalX;
           const targetY = bee.originalY;
           
           const returnPos = getReturnPosition(newReturnProgress, bee.id, targetX, targetY);
@@ -352,7 +422,7 @@ const BeeGame: React.FC = () => {
             attackPathsRef.current.delete(bee.id);
             return {
               ...bee,
-              x: targetX, // 返回到当前蜂群位置
+              x: targetX, // 返回到原始位置
               y: targetY,
               isReturning: false,
               attackProgress: 0,
@@ -367,10 +437,10 @@ const BeeGame: React.FC = () => {
             returnProgress: newReturnProgress
           };
         } else {
-          // 阵型移动 - 所有非攻击状态的蜜蜂都跟随蜂群移动
+          // 阵型移动现在由CSS动画处理，蜜蜂保持原始位置
           return {
             ...bee,
-            x: bee.originalX + formationOffset
+            x: bee.originalX
           };
         }
       });
@@ -382,6 +452,20 @@ const BeeGame: React.FC = () => {
           newState.shield = false;
         }
       }
+      
+      // 更新受伤闪烁状态
+      if (newState.isDamaged && currentTime - newState.damageTime > 1000) {
+        newState.isDamaged = false;
+        newState.damageTime = 0;
+      }
+      
+      // 更新爆炸粒子
+      newState.explosionParticles = newState.explosionParticles.map(particle => ({
+        ...particle,
+        x: particle.x + particle.vx,
+        y: particle.y + particle.vy,
+        life: particle.life - 1
+      })).filter(particle => particle.life > 0);
       
       // 检查游戏胜利
       if (newState.bees.length === 0) {
@@ -424,7 +508,7 @@ const BeeGame: React.FC = () => {
     const bees = await preloadAudios();
     setGameState({
       bees,
-      playerX: 400,
+      playerX: window.innerWidth / 2,
       playerHealth: 10,
       isRecording: true,
       currentPinyin: '',
@@ -435,7 +519,10 @@ const BeeGame: React.FC = () => {
       score: 0,
       gameStatus: 'playing',
       loadingProgress: 100,
-      loadingText: ''
+      loadingText: '',
+      isDamaged: false,
+      damageTime: 0,
+      explosionParticles: []
     });
     
     lastAttackTimeRef.current = Date.now();
@@ -461,13 +548,29 @@ const BeeGame: React.FC = () => {
   // 响应式布局监听
   useEffect(() => {
     const handleResize = () => {
-      // 触发重新渲染以更新布局
-      setGameState(prev => ({ ...prev }));
+      if (gameState.gameStatus === 'playing') {
+        // 重新计算蜂群布局
+        const { cols, spacing, startX } = getLayoutParams();
+        setGameState(prev => ({
+          ...prev,
+          playerX: window.innerWidth / 2,
+          bees: prev.bees.map((bee, index) => {
+            const col = index % cols;
+            const row = Math.floor(index / cols);
+            const newOriginalX = startX + col * spacing;
+            return {
+              ...bee,
+              originalX: newOriginalX,
+              x: bee.isAttacking || bee.isReturning ? bee.x : newOriginalX
+            };
+          })
+        }));
+      }
     };
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [gameState.gameStatus, getLayoutParams]);
 
   useEffect(() => {
     initSpeechRecognition();
@@ -481,17 +584,14 @@ const BeeGame: React.FC = () => {
     };
   }, [initSpeechRecognition]);
 
-  const { gameWidth } = getLayoutParams();
-  
   return (
     <div className="bee-game" style={{ 
       position: 'relative', 
-      width: `${gameWidth}px`, 
-      height: '600px', 
-      margin: '0 auto', 
-      border: '2px solid #333', 
+      width: '100vw', 
+      height: '100vh', 
+      margin: 0, 
+      padding: 0,
       backgroundColor: '#001122',
-      borderRadius: '10px',
       overflow: 'hidden'
     }}>
       {/* 顶部标题栏 */}
@@ -505,7 +605,7 @@ const BeeGame: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 15px',
+        padding: window.innerWidth <= 768 ? '0 8px' : '0 15px',
         zIndex: 50
       }}>
         <button 
@@ -537,35 +637,120 @@ const BeeGame: React.FC = () => {
         <div style={{ width: '60px' }}></div> {/* 占位符保持标题居中 */}
       </div>
       
+      {/* 粒子背景 */}
+      {init && gameState.gameStatus === 'playing' && <Particles
+        id="tsparticles"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 0,
+          pointerEvents: 'none'
+        }}
+        options={{
+          background: {
+            color: {
+              value: "transparent",
+            },
+          },
+          fpsLimit: 120,
+          interactivity: {
+             events: {
+               onClick: {
+                 enable: false,
+               },
+               onHover: {
+                 enable: false,
+               },
+               resize: {
+                 enable: true,
+               },
+             },
+           },
+          particles: {
+            color: {
+              value: "#ffffff",
+            },
+            links: {
+              enable: false,
+            },
+            collisions: {
+              enable: false,
+            },
+            move: {
+              direction: "bottom",
+              enable: true,
+              outModes: {
+                default: "out",
+              },
+              random: false,
+              speed: 2,
+              straight: false,
+            },
+            number: {
+               density: {
+                 enable: true,
+               },
+               value: 80,
+             },
+            opacity: {
+              value: 0.5,
+            },
+            shape: {
+              type: "star",
+            },
+            size: {
+              value: { min: 1, max: 3 },
+            },
+          },
+          detectRetina: true,
+        }}
+       />}
+      
       {/* 游戏区域 */}
       <div ref={gameAreaRef} style={{ position: 'relative', width: '100%', height: '100%', paddingTop: '50px' }}>
         
-        {/* 蜜蜂 */}
-        {gameState.bees.map(bee => (
-          <div
-            key={bee.id}
-            style={{
-              position: 'absolute',
-              left: bee.x,
-              top: bee.y,
-              width: '40px',
-              height: '40px',
-              backgroundColor: bee.isAttacking ? '#ff6b6b' : '#ffd93d',
-              border: '2px solid #333',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-              fontWeight: 'bold',
-              color: '#333',
-              transition: bee.isAttacking ? 'none' : 'left 0.1s ease-out',
-              zIndex: 10
-            }}
-          >
-            {bee.character.character}
-          </div>
-        ))}
+        {/* 蜂群容器 - 使用CSS动画实现左右摆动 */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            animation: 'bee-swarm-movement 4s ease-in-out infinite',
+            zIndex: 10
+          }}
+        >
+          {/* 蜜蜂 */}
+          {gameState.bees.map(bee => (
+            <div
+              key={bee.id}
+              style={{
+                position: 'absolute',
+                left: bee.isAttacking || bee.isReturning ? bee.x : bee.originalX,
+                top: bee.y,
+                width: '40px',
+                height: '40px',
+                backgroundColor: bee.isAttacking ? '#ff6b6b' : '#ffd93d',
+                border: '2px solid #333',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px',
+                fontWeight: 'bold',
+                color: '#333',
+                transition: bee.isAttacking ? 'none' : 'left 0.1s ease-out',
+                zIndex: 10
+              }}
+            >
+              {bee.character.character}
+            </div>
+          ))}
+        </div>
         
         {/* 激光 */}
         {laser.active && (
@@ -573,9 +758,9 @@ const BeeGame: React.FC = () => {
             style={{
               position: 'absolute',
               left: laser.x + 15,
-              top: 500,
+              top: window.innerHeight - 55,
               width: '10px',
-              height: Math.abs(laser.targetY - 500),
+              height: Math.abs(laser.targetY - (window.innerHeight - 55)),
               backgroundColor: 'rgba(255, 255, 255, 0.9)',
               animation: 'laser-pulse 0.5s ease-out',
               zIndex: 20
@@ -588,7 +773,7 @@ const BeeGame: React.FC = () => {
           style={{
             position: 'absolute',
             left: gameState.playerX - 25,
-            top: 500,
+            top: window.innerHeight - 80,
             width: '50px',
             height: '50px',
             backgroundColor: gameState.shield ? '#4ecdc4' : '#74b9ff',
@@ -599,7 +784,7 @@ const BeeGame: React.FC = () => {
             justifyContent: 'center',
             fontSize: '24px',
             transition: 'left 0.3s ease-out',
-            animation: gameState.isRecording ? 'ship-pulse 1s infinite' : 'none',
+            animation: gameState.isDamaged ? 'damage-flash 0.1s infinite' : (gameState.isRecording ? 'ship-pulse 1s infinite' : 'none'),
             boxShadow: gameState.shield ? '0 0 20px #00b894' : 'none',
             zIndex: 15
           }}
@@ -607,13 +792,67 @@ const BeeGame: React.FC = () => {
           🚀
         </div>
         
+        {/* 护盾光圈效果 */}
+        {gameState.shield && (
+          <div
+            style={{
+              position: 'absolute',
+              left: gameState.playerX - 40,
+              top: window.innerHeight - 95,
+              width: '80px',
+              height: '80px',
+              border: '2px solid #00b894',
+              borderRadius: '50%',
+              animation: 'shield-pulse 2s ease-in-out infinite',
+              zIndex: 14,
+              pointerEvents: 'none'
+            }}
+          />
+        )}
+        
+        {gameState.shield && (
+          <div
+            style={{
+              position: 'absolute',
+              left: gameState.playerX - 50,
+              top: window.innerHeight - 105,
+              width: '100px',
+              height: '100px',
+              border: '1px solid rgba(0, 184, 148, 0.5)',
+              borderRadius: '50%',
+              animation: 'shield-pulse 2s ease-in-out infinite 0.5s',
+              zIndex: 13,
+              pointerEvents: 'none'
+            }}
+          />
+        )}
+        
+        {/* 爆炸粒子 */}
+        {gameState.explosionParticles.map(particle => (
+          <div
+            key={particle.id}
+            style={{
+              position: 'absolute',
+              left: particle.x - particle.size / 2,
+              top: particle.y - particle.size / 2,
+              width: particle.size,
+              height: particle.size,
+              backgroundColor: particle.color,
+              borderRadius: '50%',
+              opacity: particle.life / particle.maxLife,
+              zIndex: 20,
+              pointerEvents: 'none'
+            }}
+          />
+        ))}
+        
         {/* 录音指示器 */}
         {gameState.isRecording && (
           <div
             style={{
               position: 'absolute',
               left: gameState.playerX - 10,
-              top: 470,
+              top: window.innerHeight - 110,
               width: '20px',
               height: '20px',
               backgroundColor: '#e17055',
@@ -628,8 +867,8 @@ const BeeGame: React.FC = () => {
       <div style={{ 
         position: 'absolute', 
         top: '60px', 
-        left: '10px', 
-        right: '10px',
+        left: window.innerWidth <= 768 ? '5px' : '10px', 
+        right: window.innerWidth <= 768 ? '5px' : '10px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -708,11 +947,12 @@ const BeeGame: React.FC = () => {
         }}>
           <div style={{
             background: 'rgba(255, 255, 255, 0.1)',
-            padding: '40px',
+            padding: window.innerWidth <= 768 ? '20px' : '40px',
             borderRadius: '20px',
             border: '1px solid rgba(255, 255, 255, 0.2)',
             textAlign: 'center',
-            backdropFilter: 'blur(20px)'
+            backdropFilter: 'blur(20px)',
+            margin: window.innerWidth <= 768 ? '0 10px' : '0'
           }}>
             <h1 style={{ margin: '0 0 20px 0', fontSize: '28px', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>🐝 小蜜蜂游戏</h1>
             <p style={{ margin: '10px 0', fontSize: '16px', opacity: 0.9 }}>通过语音说出汉字的拼音来攻击蜜蜂</p>
@@ -804,12 +1044,13 @@ const BeeGame: React.FC = () => {
         }}>
           <div style={{
             background: 'linear-gradient(135deg, rgba(255, 107, 107, 0.9) 0%, rgba(255, 159, 67, 0.9) 100%)',
-            padding: '40px',
+            padding: window.innerWidth <= 768 ? '20px' : '40px',
             borderRadius: '20px',
             border: '2px solid rgba(255, 255, 255, 0.3)',
             textAlign: 'center',
             backdropFilter: 'blur(20px)',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)'
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
+            margin: window.innerWidth <= 768 ? '0 10px' : '0'
           }}>
             <h2 style={{ margin: '0 0 15px 0', fontSize: '32px', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
               {gameState.bees.length === 0 ? '🎉 恭喜通关!' : '💥 游戏结束'}
@@ -853,6 +1094,22 @@ const BeeGame: React.FC = () => {
           50% { transform: translateY(-5px); }
         }
         
+        @keyframes damage-flash {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+        
+        @keyframes shield-pulse {
+          0% { transform: scale(1); opacity: 0.8; }
+          50% { transform: scale(1.1); opacity: 0.5; }
+          100% { transform: scale(1); opacity: 0.8; }
+        }
+        
+        @keyframes bee-swarm-movement {
+          0%, 100% { transform: translateX(0px); }
+          50% { transform: translateX(50px); }
+        }
+        
         .bee-game button:hover {
           transform: translateY(-2px);
           box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
@@ -866,12 +1123,7 @@ const BeeGame: React.FC = () => {
           animation: float 3s ease-in-out infinite;
         }
         
-        @media (max-width: 600px) {
-          .bee-game {
-            margin: 10px !important;
-            width: calc(100vw - 20px) !important;
-          }
-        }
+       
       `}</style>
     </div>
   );
